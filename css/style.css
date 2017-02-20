@@ -1,0 +1,12 @@
+html, body {
+    background: #003;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.wechat_share_img {
+    display: none;
+}
