@@ -17,7 +17,7 @@ define(['cocos', 'chipmunk'], function (cc, cp) {
         ctor: function (fileName) {
             this._super(fileName);
 
-            var radius = this.getBoundingBox().width / 2;
+            var radius = this.getContentSize().width / 2;
 
             this.body = new cp.Body(1, cp.momentForCircle(1, 0, radius, cp.vzero));
             this.body.sprite = this;

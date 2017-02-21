@@ -79,18 +79,57 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
     // 袋口位置
     var POCKET_POS = [
         // 左下袋
-        cc.p(64, 64),
+        [64, 64],
         // 左上袋
-        cc.p(64, 713),
+        [64, 713],
         // 右下袋
-        cc.p(1338, 64),
+        [1338, 64],
         // 右上袋
-        cc.p(1338, 713),
+        [1338, 713],
         // 下中袋
-        cc.p(701, 46),
+        [701, 46],
         // 上中袋
-        cc.p(701, 731)
+        [701, 731]
     ];
+
+    // 球半径
+    var BALL_RADIUS = 20;
+
+    // 母球初始位置
+    var MASTER_INITIAL_POS = [TABLE_WIDTH * 3 / 4, TABLE_HEIGHT / 2];
+
+    // 第一球初始位置
+    var BALL_INITIAL_POS = [TABLE_WIDTH / 4, TABLE_HEIGHT / 2];
+
+    // 其他球相对于第一球的位置
+    var BALLS_INITIAL_REL_POS = (function () {
+        var pos = [
+            // 第1列
+            [0, 0]
+        ];
+        var i, j;
+        var y, x;
+        var xStep = 0 - Math.sqrt(BALL_RADIUS * BALL_RADIUS * 3 );
+        x = xStep;
+        for (i = 1; i < 5; i ++) {
+            // 奇数列从中央开始，偶数列从两边开始
+            if (i % 2 === 0) {
+                // 奇数列先把中间的填了（i为偶数的列才是奇数列）
+                pos.push([x, 0]);
+                y = BALL_RADIUS * 2;
+            } else {
+                y = BALL_RADIUS;
+            }
+            // 第2列有2个球、第3列有3个球
+            for (j = 0; j < i / 2; j ++) {
+                pos.push([x, y]);
+                pos.push([x, 0-y]);
+                y += (BALL_RADIUS * 2);
+            }
+            x += xStep;
+        }
+        return pos;
+    })();
 
     if (cc.sys.isMobile) {
         (function () {
@@ -113,14 +152,42 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             }
             for (i = 0; i < POCKET_POS; i ++) {
                 v = POCKET_POS[i];
-                t = v.x;
-                v.x = v.y;
-                v.y = t;
+                t = v[0];
+                v[0] = v[1];
+                v[1] = t;
             }
         })();
     }
 
+    var STATUS_WAIT = 0;
+    var STATUS_RUNNING = 1;
+    var STATUS_CLEAR = 10;
+
     return cc.Layer.extend({
+
+        // 当前桌子状态：等待发射、运转中
+        status: STATUS_RUNNING,
+
+        // 球的数量
+        ballCount: 0,
+
+        // 位运算，每一位表示一个球，0为静止、1为运动（方便判断是否整桌静止）
+        runningBit: 0,
+
+        // 母球 sprite
+        masterBall: null,
+
+        // 球 sprite 数组（不含母球）
+        balls: [],
+
+        // 记录所有进球的编号（然后派发事件）
+        goalBallsNumber: [],
+
+        // 记录本次运转的进球的编号（然后派发事件）
+        goalBallsNumberOneTurn: [],
+
+        // 记录本次运转是否进了母球
+        isMasterGoal: false,
 
         ctor : function () {
             this._super();
@@ -142,24 +209,32 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
 
             this.scheduleUpdate();
 
-            this.masterBallOriginPos = cc.p(TABLE_WIDTH * 3 / 4, TABLE_HEIGHT / 2);
-            if (cc.sys.isMobile) {
-                this.masterBallOriginPos = cc.p(TABLE_WIDTH / 2, TABLE_HEIGHT / 4);
-            }
-            this.masterBall = this.addBall(this.masterBallOriginPos, cp.vzero, 'res/masterball.png');
+            this.masterBall = this.addBall(cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]), cp.vzero, 'res/masterball.png');
+            this.masterBall.isMaster = true;
 
-            var me = this;
-            var t = setInterval(function () {
-                me.addBall(cc.p(352, 388), cp.v(cc.random0To1() * 500, cc.random0To1() * 500));
-            }, 1000);
-            setTimeout(function () {
-                clearInterval(t);
-            }, 10010);
+            for (var i = 0; i < 10; i ++) {
+                var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
+                var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
+                this.balls.push(this.addBall(cc.p(x, y), cp.vzero));
+            }
+
+            // todo:临时代码（清理）
+            cc.eventManager.addCustomListener('table:status_clear', function () {
+                alert('清袋！');
+                this.resetTable();
+            }.bind(this));
+            cc.eventManager.addCustomListener('table:master_goal', function () {
+                alert('进白球啦！');
+            }.bind(this));
+            cc.eventManager.addCustomListener('table:goal', function (event) {
+                alert('进了%d个球啦！'.replace('%d', event.getUserData().length));
+            }.bind(this));
         },
 
         initSpace : function () {
             var i;
             var wall;
+            var pocket;
 
             // 物理空间
             var space = this.space;
@@ -193,7 +268,7 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             }*/
 
             // 创建墙壁（多边形版）
-            for(i=0; i < WALL_POLYGONS.length; i++ ) {
+            for (i = 0; i < WALL_POLYGONS.length; i ++) {
                 wall = new cp.PolyShape(staticBody,
                     WALL_POLYGONS[i],
                     cp.vzero);
@@ -205,34 +280,30 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
                 space.addStaticShape(wall);
             }
 
-            // todo: 创建袋口
-
+            // 创建袋口
+            var pocketBodyRadius = POCKET_RADIUS - BALL_RADIUS;
+            for (i = 0; i < POCKET_POS.length; i ++) {
+                // 袋口body半径要减去球的半径，但是袋口显示时候不用减，这样只要球“碰撞”到袋口就认为进袋了
+                pocket = new cp.CircleShape(staticBody, pocketBodyRadius, cp.v(POCKET_POS[i][0], POCKET_POS[i][1]));
+                pocket.setElasticity(0);
+                pocket.setFriction(0);
+                pocket.setSensor(true);pocket.setCollisionType(2);
+                space.addStaticShape(pocket);
+            }
 
             // 调试显示
             this._debugNode = new cc.PhysicsDebugNode(this.space);
             this.addChild(this._debugNode);
         },
 
-        fixEventPosition: function (evt_pos) {
-            var pos = this.getPosition();
-            var anchor = this.getAnchorPoint();
-            var size = this.getContentSize();
-            var fixPos = cc.p(
-                pos.x - size.width * anchor.x,
-                pos.y - size.height * anchor.y
-            );
-            evt_pos.x -= fixPos.x;
-            evt_pos.y -= fixPos.y;
-            return evt_pos;
-        },
-
         initMouse: function () {
-            var me = this;
             var mouseListener = cc.EventListener.create({
                 event: cc.EventListener.MOUSE,
                 onMouseUp: function (event) {
+                    var target = event.getCurrentTarget();
+                    if (target.status !== STATUS_WAIT) return;
                     if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
-                        me.shootMasterBall(me.fixEventPosition(event.getLocation()));
+                        target.shootMasterBall(target.convertToNodeSpace(event.getLocation()));
                     }
                 }
             });
@@ -240,11 +311,14 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
         },
 
         initTouch: function () {
-            var me = this;
             var touchListener = cc.EventListener.create({
                 event: cc.EventListener.TOUCH_ONE_BY_ONE,
                 onTouchBegan: function (event) {
-                    me.shootMasterBall(me.fixEventPosition(event.getLocation()));
+                    var target = event.getCurrentTarget();
+                    if (target.status !== STATUS_WAIT) return;
+                    if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
+                        target.shootMasterBall(target.convertToNodeSpace(event.getLocation()));
+                    }
                 }
             });
             cc.eventManager.addListener(touchListener, this);
@@ -260,7 +334,10 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             var vy = ballBody.vy;
             var w = ballBody.w;
             if (vx === 0 && vy === 0 && w === 0) {
+                this.setRunning(ballBody.number, false);
                 return false;
+            } else {
+                this.setRunning(ballBody.number, true);
             }
 
             /*/////////////
@@ -293,9 +370,35 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             return false;
         },
 
+        pocketCollisionBegan: function (arbiter, space) {
+            var shapes = arbiter.getShapes();
+            //var desktop = shapes[0];
+            var ballShape = shapes[1];
+            var ballBody = ballShape.getBody();
+            var ballSprite = ballBody.sprite;
+
+            if (ballSprite.isMaster) {
+                this.isMasterGoal = true;
+            } else {
+                this.goalBallsNumberOneTurn.push(ballBody.number);
+                this.goalBallsNumber.push(ballBody.number);
+            }
+
+            space.addPostStepCallback(function () {
+                space.removeBody(ballBody);
+                space.removeShape(ballShape);
+                ballSprite.removeFromParent(true);
+                this.ballCount --;
+                this.setRunning(ballBody.number, false);
+            }.bind(this));
+
+            return false;
+        },
+
         onEnter: function() {
             this._super();
-            this.space.addCollisionHandler(1, 0, null, this.desktopPreSolve, null, null);
+            this.space.addCollisionHandler(1, 0, null, this.desktopPreSolve.bind(this), null, null);
+            this.space.addCollisionHandler(2, 0, this.pocketCollisionBegan.bind(this), null, null, null);
         },
 
         onExit: function() {
@@ -308,11 +411,28 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             var sprite = new Ball(pngName);
             sprite.setPosition(pos);
             sprite.body.setVel(vel);
+            sprite.body.number = this.ballCount;
+            if (!cp.v.eql(vel, cp.vzero)) {
+                this.setRunning(this.ballCount, true);
+            }
+            this.ballCount ++;
             this.space.addBody(sprite.body);
             this.space.addShape(sprite.shape);
             this.addChild(sprite);
 
             return sprite;
+        },
+
+        resetBall: function (ballSprite, pos) {
+            ballSprite.setPosition(pos);
+            ballSprite.body.setVel(cp.vzero);
+            ballSprite.body.setAngVel(0);
+            if (ballSprite.body.isRogue()) {
+                this.ballCount ++;
+                this.space.addBody(ballSprite.body);
+                this.space.addShape(ballSprite.shape);
+                this.addChild(ballSprite);
+            }
         },
 
         shootMasterBall: function (pos) {
@@ -322,23 +442,101 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             if (dx === 0 && dy === 0) {
                 return;
             }
-
             var m_sq = SHOOT_MAX_SPEED * SHOOT_MAX_SPEED / (dx * dx + dy * dy);
             var m = Math.sqrt(m_sq);
             var v = new cp.Vect(m * dx, m * dy);
 
             this.masterBall.body.setVel(v);
+            this.setRunning(this.masterBall.body.number, true);
+        },
+
+        resetTable: function () {
+            this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+
+            for (var i = 0, len = this.balls.length; i < len; i ++) {
+                var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
+                var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
+                this.resetBall(this.balls[i], cc.p(x, y));
+            }
+
+            this.setStatus(STATUS_RUNNING);
+        },
+
+        setRunning: function (ballNumber, isRunning) {
+            // 球的编号第几，就是第几位
+            var ballBit = 1 << ballNumber;
+            if (isRunning) {
+                // “或”运算，把对应的位，置为1
+                this.runningBit = this.runningBit | ballBit;
+                this.setStatus(STATUS_RUNNING);
+            } else {
+                // “与非”运算，把对应的位，置为0 （先非后与）
+                this.runningBit = this.runningBit & (~ballBit);
+                if (!this.runningBit) {
+                    this.setStatus(STATUS_WAIT);
+                }
+            }
+        },
+
+        setStatus: function (status) {
+            if (status === this.status) {
+                return;
+            }
+            var oldStatus = this.status;
+            this.status = status;
+            if (status === STATUS_RUNNING) {
+                cc.eventManager.dispatchCustomEvent('table:status_running');
+            } else if (status === STATUS_WAIT) {
+                cc.eventManager.dispatchCustomEvent('table:status_wait');
+                if (this.space.locked) {
+                    this.space.addPostStepCallback(function () {
+                        this.checkOneTurn();
+                    }.bind(this));
+                } else {
+                    this.checkOneTurn();
+                }
+            } else if (status === STATUS_CLEAR) {
+                cc.eventManager.dispatchCustomEvent('table:status_clear');
+            }
+        },
+
+        // 一轮运动结束后的各种检查（母球落袋、是否全清）
+        checkOneTurn: function () {
+            var i, len;
+            if (this.isMasterGoal) {
+                cc.eventManager.dispatchCustomEvent('table:master_goal');
+                for (i = 0, len = this.goalBallsNumberOneTurn.length; i < len; i ++) {
+                    this.resetBall(this.balls[this.goalBallsNumberOneTurn[i]], cc.p(BALL_INITIAL_POS[0], BALL_INITIAL_POS[1]));
+                    this.goalBallsNumber.pop();
+                }
+                this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+            } else {
+                if (this.goalBallsNumberOneTurn.length > 0) {
+                    cc.eventManager.dispatchCustomEvent('table:goal', this.goalBallsNumberOneTurn);
+                    if (this.ballCount <= 1) {
+                        this.setStatus(STATUS_CLEAR);
+                    }
+                } else {
+                    cc.eventManager.dispatchCustomEvent('table:no_goal');
+                }
+            }
+
+            // reset
+            this.isMasterGoal = false;
+            this.goalBallsNumberOneTurn = [];
         },
 
         update: function (dt) {
             this._super(dt);
             // chipmunk step
-            var l = Math.round(60 / (1 / dt));
-            if (l < 1) {
-                l = 1;
-            }
-            for (var i = 0; i < l; i ++) {
-                this.space.step(1 / 60);
+            if (this.status === STATUS_RUNNING) {
+                var l = Math.round(60 / (1 / dt));
+                if (l < 1) {
+                    l = 1;
+                }
+                for (var i = 0; i < l; i ++) {
+                    this.space.step(1 / 60);
+                }
             }
         }
     });
