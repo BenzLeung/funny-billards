@@ -8,7 +8,7 @@
  * each engineer has a duty to keep the code elegant
  */
 
-define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
+define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc, cp, Ball, BallCursor) {
     // 移动摩擦系数
     var MOVE_FRICTION = 1.0;
     // 移动摩擦系数的平方
@@ -150,11 +150,27 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             for (i = 0; i < WALL_POLYGONS.length; i ++) {
                 WALL_POLYGONS[i] = WALL_POLYGONS[i].reverse();
             }
-            for (i = 0; i < POCKET_POS; i ++) {
+            for (i = 0; i < POCKET_POS.length; i ++) {
                 v = POCKET_POS[i];
                 t = v[0];
                 v[0] = v[1];
                 v[1] = t;
+            }
+
+            t = MASTER_INITIAL_POS[0];
+            MASTER_INITIAL_POS[0] = MASTER_INITIAL_POS[1];
+            MASTER_INITIAL_POS[1] = TABLE_HEIGHT - t;
+
+            t = BALL_INITIAL_POS[0];
+            BALL_INITIAL_POS[0] = BALL_INITIAL_POS[1];
+            BALL_INITIAL_POS[1] = TABLE_HEIGHT - t;
+
+
+            for (i = 0; i < BALLS_INITIAL_REL_POS.length; i ++) {
+                v = BALLS_INITIAL_REL_POS[i];
+                t = v[0];
+                v[0] = v[1];
+                v[1] = 0 - t;
             }
         })();
     }
@@ -165,6 +181,18 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
 
     return cc.Layer.extend({
 
+        // 母球 sprite
+        masterBall: null,
+
+        // 球 sprite 数组（不含母球）
+        balls: [],
+
+        // 瞄准球的光标 BallCursor
+        ballCursor: null,
+
+        // 瞄准球的线 DrawNode
+        ballLine: null,
+
         // 当前桌子状态：等待发射、运转中
         status: STATUS_RUNNING,
 
@@ -174,13 +202,7 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
         // 位运算，每一位表示一个球，0为静止、1为运动（方便判断是否整桌静止）
         runningBit: 0,
 
-        // 母球 sprite
-        masterBall: null,
-
-        // 球 sprite 数组（不含母球）
-        balls: [],
-
-        // 记录所有进球的编号（然后派发事件）
+        // 记录所有进球的编号
         goalBallsNumber: [],
 
         // 记录本次运转的进球的编号（然后派发事件）
@@ -202,21 +224,27 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             this.space = new cp.Space();
             this.initSpace();
 
-            this.initMouse();
-            if (cc.sys.capabilities['touches']) {
-                this.initTouch();
-            }
-
-            this.scheduleUpdate();
-
-            this.masterBall = this.addBall(cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]), cp.vzero, 'res/masterball.png');
-            this.masterBall.isMaster = true;
-
             for (var i = 0; i < 10; i ++) {
                 var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
                 var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
                 this.balls.push(this.addBall(cc.p(x, y), cp.vzero));
             }
+
+            this.ballCursor = new BallCursor(BALL_RADIUS);
+            this.ballLine = new cc.DrawNode();
+            this.addChild(this.ballLine, 11);
+            this.addChild(this.ballCursor, 12);
+
+            this.masterBall = this.addBall(cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]), cp.vzero, 'res/masterball.png');
+            this.masterBall.isMaster = true;
+
+            if (cc.sys.capabilities['touches']) {
+                this.initTouch();
+            } else {
+                this.initMouse();
+            }
+
+            this.scheduleUpdate();
 
             // todo:临时代码（清理）
             cc.eventManager.addCustomListener('table:status_clear', function () {
@@ -293,35 +321,75 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
 
             // 调试显示
             this._debugNode = new cc.PhysicsDebugNode(this.space);
-            this.addChild(this._debugNode);
+            this.addChild(this._debugNode, 1);
         },
 
         initMouse: function () {
             var mouseListener = cc.EventListener.create({
                 event: cc.EventListener.MOUSE,
+                onMouseMove: function (event) {
+                    var target = event.getCurrentTarget();
+                    if (target.status !== STATUS_WAIT) return false;
+                    var pos = target.convertToNodeSpace(event.getLocation());
+                    target.setAimLine(pos);
+                },
                 onMouseUp: function (event) {
                     var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return;
+                    if (target.status !== STATUS_WAIT) return false;
                     if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
-                        target.shootMasterBall(target.convertToNodeSpace(event.getLocation()));
+                        target.shootMasterBall();
                     }
                 }
             });
             cc.eventManager.addListener(mouseListener, this);
+
+            // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
+            cc.eventManager.addCustomListener('table:status_running', function () {
+                this.hideAimLine();
+            }.bind(this));
         },
 
         initTouch: function () {
+            this.shootButton = new cc.LabelTTF('发射！', 'Microsoft Yahei', 100);
+            this.shootButton.setPosition(TABLE_WIDTH / 2, 0 - 60);
+            this.addChild(this.shootButton, 5);
+
             var touchListener = cc.EventListener.create({
                 event: cc.EventListener.TOUCH_ONE_BY_ONE,
-                onTouchBegan: function (event) {
+                onTouchBegan: function (touch, event) {
                     var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return;
-                    if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
-                        target.shootMasterBall(target.convertToNodeSpace(event.getLocation()));
+                    if (target.status !== STATUS_WAIT) return false;
+                    var shootButton = target.shootButton;
+                    var shootButtonRect = shootButton.getBoundingBox();
+                    var touchPos = target.convertToNodeSpace(touch.getLocation());
+                    if (cc.rectContainsPoint(shootButtonRect, touchPos)) {
+                        target.shootMasterBall();
+                        return false;
                     }
+                    return true;
+                },
+                onTouchMoved: function (touch, event) {
+                    var target = event.getCurrentTarget();
+                    if (target.status !== STATUS_WAIT) return false;
+                    var delta = touch.getDelta();
+                    var curPos = target.ballCursor.getPosition();
+                    var theRect = cc.rect(BALL_RADIUS, BALL_RADIUS, TABLE_WIDTH - BALL_RADIUS, TABLE_HEIGHT - BALL_RADIUS);
+                    curPos = cc.pAdd(curPos, delta);
+                    curPos = cc.pClamp(curPos, cc.p(theRect.x, theRect.y), cc.p(theRect.width, theRect.height));
+                    target.setAimLine(curPos);
+                    return true;
                 }
             });
             cc.eventManager.addListener(touchListener, this);
+            this.setAimLine(cc.p(TABLE_WIDTH / 2, TABLE_HEIGHT / 2));
+
+            // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
+            cc.eventManager.addCustomListener('table:status_wait', function () {
+                this.setAimLine(this.ballCursor.getPosition());
+            }.bind(this));
+            cc.eventManager.addCustomListener('table:status_running', function () {
+                this.hideAimLine();
+            }.bind(this));
         },
 
         desktopPreSolve: function (arbiter, space) {
@@ -403,6 +471,7 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
 
         onExit: function() {
             this.space.removeCollisionHandler(1, 0);
+            this.space.removeCollisionHandler(2, 0);
             this._super();
         },
 
@@ -418,7 +487,7 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
             this.ballCount ++;
             this.space.addBody(sprite.body);
             this.space.addShape(sprite.shape);
-            this.addChild(sprite);
+            this.addChild(sprite, 5);
 
             return sprite;
         },
@@ -431,12 +500,39 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
                 this.ballCount ++;
                 this.space.addBody(ballSprite.body);
                 this.space.addShape(ballSprite.shape);
-                this.addChild(ballSprite);
+                this.addChild(ballSprite, 5);
+            }
+        },
+
+        showAimLine: function () {
+            this.ballCursor.setVisible(true);
+            this.ballLine.setVisible(true);
+        },
+
+        hideAimLine: function () {
+            this.ballCursor.setVisible(false);
+            this.ballLine.setVisible(false);
+        },
+
+        setAimLine: function (pos) {
+            var theRect = cc.rect(BALL_RADIUS, BALL_RADIUS, TABLE_WIDTH - BALL_RADIUS * 2, TABLE_HEIGHT - BALL_RADIUS * 2);
+            if (cc.rectContainsPoint(theRect, pos)) {
+                this.ballCursor.setPosition(pos);
+                this.ballLine.clear();
+                this.ballLine.drawSegment(this.masterBall.getPosition(), pos, 1, cc.color(128, 128, 128));
+                if (!this.ballCursor.isVisible()) {
+                    this.showAimLine();
+                }
+            } else {
+                if (this.ballCursor.isVisible()) {
+                    this.hideAimLine();
+                }
             }
         },
 
         shootMasterBall: function (pos) {
             var curPos = this.masterBall.getPosition();
+            pos = pos || this.ballCursor.getPosition();
             var dx = pos.x - curPos.x;
             var dy = pos.y - curPos.y;
             if (dx === 0 && dy === 0) {
@@ -459,6 +555,7 @@ define(['cocos', 'chipmunk', 'sprites/ball'], function (cc, cp, Ball) {
                 this.resetBall(this.balls[i], cc.p(x, y));
             }
 
+            this.goalBallsNumber = [];
             this.setStatus(STATUS_RUNNING);
         },
 
