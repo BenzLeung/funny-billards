@@ -205,6 +205,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         // 记录所有进球的编号
         goalBallsNumber: [],
 
+        // 记录当前是第几回合
+        turns: 0,
+
         // 记录本次运转的进球的编号（然后派发事件）
         goalBallsNumberOneTurn: [],
 
@@ -221,7 +224,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.space = new cp.Space();
             this.initSpace();
 
-            for (var i = 0; i < 10; i ++) {
+            for (var i = 0; i < 1; i ++) {
                 var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
                 var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
                 this.balls.push(this.addBall(cc.p(x, y), cp.vzero));
@@ -238,8 +241,8 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.scheduleUpdate();
 
             // todo:临时代码（清理）
-            cc.eventManager.addCustomListener('table:status_clear', function () {
-                alert('清袋！');
+            cc.eventManager.addCustomListener('table:status_clear', function (event) {
+                alert('清袋！你用了%d回合！'.replace('%d', event.getUserData()['turns']));
                 this.resetTable();
             }.bind(this));
             cc.eventManager.addCustomListener('table:master_goal', function () {
@@ -489,6 +492,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
 
             this.goalBallsNumber = [];
+            this.turns = 0;
             this.setStatus(STATUS_RUNNING);
         },
 
@@ -526,13 +530,16 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                     this.checkOneTurn();
                 }
             } else if (status === STATUS_CLEAR) {
-                cc.eventManager.dispatchCustomEvent('table:status_clear');
+                cc.eventManager.dispatchCustomEvent('table:status_clear', {turns: this.turns});
             }
         },
 
         // 一轮运动结束后的各种检查（母球落袋、是否全清）
         checkOneTurn: function () {
             var i, len;
+
+            this.turns ++;
+
             if (this.isMasterGoal) {
                 cc.eventManager.dispatchCustomEvent('table:master_goal');
                 for (i = 0, len = this.goalBallsNumberOneTurn.length; i < len; i ++) {
