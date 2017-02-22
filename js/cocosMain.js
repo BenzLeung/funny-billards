@@ -20,7 +20,7 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
 
     cc.game.onStart = function(){
         if (cc.sys.isMobile) {
-            cc.view.setDesignResolutionSize(1250, 1920, cc.ResolutionPolicy.NO_BORDER);
+            cc.view.setDesignResolutionSize(877, 1642, cc.ResolutionPolicy.SHOW_ALL);
         } else {
             cc.view.setDesignResolutionSize(1502, 877, cc.ResolutionPolicy.SHOW_ALL);
         }

@@ -90,6 +90,7 @@ define(
                         TableLayer.TABLE_WIDTH - TableLayer.BALL_RADIUS,
                         TableLayer.TABLE_HEIGHT - TableLayer.BALL_RADIUS
                     );
+                    delta = cc.pMult(delta, 0.5);
                     curPos = cc.pAdd(curPos, delta);
                     curPos = cc.pClamp(curPos, cc.p(theRect.x, theRect.y), cc.p(theRect.width, theRect.height));
                     table.setAimLine(curPos);
