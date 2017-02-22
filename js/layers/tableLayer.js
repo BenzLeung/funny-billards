@@ -350,7 +350,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         },
 
         initTouch: function () {
-            this.shootButton = new cc.LabelTTF('发射！', 'Microsoft Yahei', 100);
+            this.shootButton = new cc.LabelTTF('发射!', 'Microsoft Yahei', 100);
             this.shootButton.setPosition(TABLE_WIDTH / 2, 0 - 60);
             this.addChild(this.shootButton, 5);
 
@@ -409,12 +409,13 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
 
             /*/////////////
-             (i*x)^2 + (i*y)^2 = F^2
-             ->  i^2 * x^2 + i^2 * y^2 = F^2
-             ->  i^2 * (x^2 + y^2) = F^2
-             ->  i^2 = F^2 / (x^2 + y^2)
+             (m*x)^2 + (m*y)^2 = F^2
+             ->  m^2 * x^2 + m^2 * y^2 = F^2
+             ->  m^2 * (x^2 + y^2) = F^2
+             ->  m^2 = F^2 / (x^2 + y^2)
              /////////////*/
-            var m_sq = MOVE_FRICTION_SQ / (vx * vx + vy * vy);
+            var frictionSQ = ballBody.sprite.frictionSQ;
+            var m_sq = frictionSQ / (vx * vx + vy * vy);
             var m = Math.sqrt(m_sq);
 
             if (m > 1) {
@@ -425,11 +426,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 ballBody.vy = vy - m * vy;
             }
 
-            if (Math.abs(w) > ROTATE_FRICTION) {
+            var rotateFriction = ballBody.sprite.rotateFriction;
+            if (Math.abs(w) > rotateFriction) {
                 if (w > 0) {
-                    ballBody.w -= ROTATE_FRICTION;
+                    ballBody.w -= rotateFriction;
                 } else {
-                    ballBody.w += ROTATE_FRICTION;
+                    ballBody.w += rotateFriction;
                 }
             } else {
                 ballBody.w = 0;

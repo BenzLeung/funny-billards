@@ -24,4 +24,4 @@ require.config({
     }
 });
 
-require(['main']);
+require(['cocosMain']);

@@ -13,7 +13,10 @@ define(['cocos', 'chipmunk'], function (cc, cp) {
     return cc.PhysicsSprite.extend({
         // 球与桌面的摩擦力系数
         friction: 1.0,
+        // 球与桌面的摩擦力系数的平方
         frictionSQ: 1.0,
+        // 旋转摩擦力系数
+        rotateFriction: Math.PI * 2 / 360,
         ctor: function (fileName) {
             this._super(fileName);
 

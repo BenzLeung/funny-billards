@@ -36,9 +36,9 @@ gulp.task('images', ['clean'], function () {
 });
 
 gulp.task('js', ['clean'], function () {
-    gulp.src('js/config.js')
+    gulp.src('js/requireMain.js')
         .pipe(requireJsOptimize({
-            mainConfigFile: 'js/config.js',
+            mainConfigFile: 'js/requireMain.js',
             out: 'script.js'
         }))
         .pipe(replace(/res\/(.+?).png/g, 'dist/images/$1.png'))
