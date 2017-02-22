@@ -224,7 +224,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.space = new cp.Space();
             this.initSpace();
 
-            for (var i = 0; i < 1; i ++) {
+            for (var i = 0; i < 10; i ++) {
                 var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
                 var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
                 this.balls.push(this.addBall(cc.p(x, y), cp.vzero));
