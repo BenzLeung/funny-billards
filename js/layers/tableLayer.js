@@ -179,7 +179,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
     var STATUS_RUNNING = 1;
     var STATUS_CLEAR = 10;
 
-    return cc.Layer.extend({
+    var TableLayer = cc.Layer.extend({
 
         // 母球 sprite
         masterBall: null,
@@ -214,12 +214,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         ctor : function () {
             this._super();
 
-            var winSize = cc.director.getWinSize();
-
             this.setContentSize(TABLE_WIDTH, TABLE_HEIGHT);
-            this.ignoreAnchorPointForPosition(false);
-            this.setAnchorPoint(0.5, 0.5);
-            this.setPosition(winSize.width / 2, winSize.height / 2);
+            /*this.ignoreAnchorPointForPosition(false);
+            this.setAnchorPoint(0.5, 0.5);*/
 
             this.space = new cp.Space();
             this.initSpace();
@@ -237,12 +234,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
             this.masterBall = this.addBall(cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]), cp.vzero, 'res/masterball.png');
             this.masterBall.isMaster = true;
-
-            if (cc.sys.capabilities['touches']) {
-                this.initTouch();
-            } else {
-                this.initMouse();
-            }
 
             this.scheduleUpdate();
 
@@ -325,71 +316,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         },
 
         initMouse: function () {
-            var mouseListener = cc.EventListener.create({
-                event: cc.EventListener.MOUSE,
-                onMouseMove: function (event) {
-                    var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return false;
-                    var pos = target.convertToNodeSpace(event.getLocation());
-                    target.setAimLine(pos);
-                },
-                onMouseUp: function (event) {
-                    var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return false;
-                    if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
-                        target.shootMasterBall();
-                    }
-                }
-            });
-            cc.eventManager.addListener(mouseListener, this);
 
-            // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
-            cc.eventManager.addCustomListener('table:status_running', function () {
-                this.hideAimLine();
-            }.bind(this));
         },
 
         initTouch: function () {
-            this.shootButton = new cc.LabelTTF('发射!', 'Microsoft Yahei', 100);
-            this.shootButton.setPosition(TABLE_WIDTH / 2, 0 - 60);
-            this.addChild(this.shootButton, 5);
 
-            var touchListener = cc.EventListener.create({
-                event: cc.EventListener.TOUCH_ONE_BY_ONE,
-                onTouchBegan: function (touch, event) {
-                    var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return false;
-                    var shootButton = target.shootButton;
-                    var shootButtonRect = shootButton.getBoundingBox();
-                    var touchPos = target.convertToNodeSpace(touch.getLocation());
-                    if (cc.rectContainsPoint(shootButtonRect, touchPos)) {
-                        target.shootMasterBall();
-                        return false;
-                    }
-                    return true;
-                },
-                onTouchMoved: function (touch, event) {
-                    var target = event.getCurrentTarget();
-                    if (target.status !== STATUS_WAIT) return false;
-                    var delta = touch.getDelta();
-                    var curPos = target.ballCursor.getPosition();
-                    var theRect = cc.rect(BALL_RADIUS, BALL_RADIUS, TABLE_WIDTH - BALL_RADIUS, TABLE_HEIGHT - BALL_RADIUS);
-                    curPos = cc.pAdd(curPos, delta);
-                    curPos = cc.pClamp(curPos, cc.p(theRect.x, theRect.y), cc.p(theRect.width, theRect.height));
-                    target.setAimLine(curPos);
-                    return true;
-                }
-            });
-            cc.eventManager.addListener(touchListener, this);
-            this.setAimLine(cc.p(TABLE_WIDTH / 2, TABLE_HEIGHT / 2));
-
-            // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
-            cc.eventManager.addCustomListener('table:status_wait', function () {
-                this.setAimLine(this.ballCursor.getPosition());
-            }.bind(this));
-            cc.eventManager.addCustomListener('table:status_running', function () {
-                this.hideAimLine();
-            }.bind(this));
         },
 
         desktopPreSolve: function (arbiter, space) {
@@ -639,4 +570,15 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
         }
     });
+
+    TableLayer.TABLE_WIDTH = TABLE_WIDTH;
+    TableLayer.TABLE_HEIGHT = TABLE_HEIGHT;
+    TableLayer.POCKET_RADIUS = POCKET_RADIUS;
+    TableLayer.BALL_RADIUS = BALL_RADIUS;
+
+    TableLayer.STATUS_WAIT = STATUS_WAIT;
+    TableLayer.STATUS_RUNNING = STATUS_RUNNING;
+    TableLayer.STATUS_CLEAR = STATUS_CLEAR;
+
+    return TableLayer;
 });
