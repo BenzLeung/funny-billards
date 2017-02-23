@@ -1,5 +1,5 @@
 {
-  "name": "funny billards",
+  "name": "funny-billards",
   "version": "0.0.1",
   "devDependencies": {
     "gulp": "^3.9.1",

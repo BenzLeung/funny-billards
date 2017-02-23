@@ -24,7 +24,8 @@ define(
             ctor: function () {
                 this._super();
                 this.tableLayer = new TableLayer();
-
+                this.tableLayer.ignoreAnchorPointForPosition(false);
+                this.tableLayer.setAnchorPoint(0, 0);
                 this.addChild(this.tableLayer);
 
                 if (cc.sys.capabilities['touches']) {
@@ -35,23 +36,19 @@ define(
             },
 
             initTouch: function () {
-                this.shootButton = new cc.LabelTTF('发射!', 'Microsoft Yahei', 100);
-                this.shootButton.setPosition(cc.visibleRect.width / 2, 60);
-                this.addChild(this.shootButton, 5);
-
                 var touchListener = cc.EventListener.create({
                     event: cc.EventListener.TOUCH_ALL_AT_ONCE,
-                    onTouchMoved: function (touches, event) {
+                    onTouchesMoved: function (touches, event) {
                         var target = event.getCurrentTarget();
                         var table = target.tableLayer;
                         if (table.status !== TableLayer.STATUS_WAIT) return false;
                         if (touches.length > 1) {
                             var touch1 = touches[0];
                             var touch2 = touches[1];
-                            var pos1 = this.convertToNodeSpace(touch1.getLocation());
-                            var pos2 = this.convertToNodeSpace(touch2.getLocation());
-                            var prevPos1 = this.convertToNodeSpace(touch1.getPreviousLocation());
-                            var prevPos2 = this.convertToNodeSpace(touch2.getPreviousLocation());
+                            var pos1 = target.convertToNodeSpace(touch1.getLocation());
+                            var pos2 = target.convertToNodeSpace(touch2.getLocation());
+                            var prevPos1 = target.convertToNodeSpace(touch1.getPreviousLocation());
+                            var prevPos2 = target.convertToNodeSpace(touch2.getPreviousLocation());
                             var dPos1 = touch1.getDelta();
                             var dPos2 = touch2.getDelta();
                             var ancPos = cc.pMidpoint(pos1, pos2);
@@ -59,8 +56,8 @@ define(
                             var distance = cc.pDistance(pos1, pos2);
                             var prevDistance = cc.pDistance(prevPos1, prevPos2);
                             var scale = distance / prevDistance;
-                            this.moveTableDelta(moveDPos);
-                            this.zoomTableDelta(scale, ancPos);
+                            target.moveTableDelta(moveDPos);
+                            target.zoomTableDelta(scale, ancPos);
                         } else {
                             var touch = touches[0];
                             var delta = touch.getDelta();
@@ -71,7 +68,7 @@ define(
                                 TableLayer.TABLE_WIDTH - TableLayer.BALL_RADIUS,
                                 TableLayer.TABLE_HEIGHT - TableLayer.BALL_RADIUS
                             );
-                            delta = cc.pMult(delta, 0.5);
+                            delta = cc.pMult(delta, 0.5 / target.tableScale);
                             curPos = cc.pAdd(curPos, delta);
                             curPos = cc.pClamp(curPos, cc.p(theRect.x, theRect.y), cc.p(theRect.width, theRect.height));
                             table.setAimLine(curPos);
@@ -79,6 +76,7 @@ define(
                         }
                     }
                 });
+                cc.eventManager.setPriority(touchListener, 10);
                 cc.eventManager.addListener(touchListener, this);
                 this.tableLayer.setAimLine(cc.p(TableLayer.TABLE_WIDTH / 2, TableLayer.TABLE_HEIGHT / 2));
 
@@ -101,11 +99,11 @@ define(
 
                 var tableAncPos = cc.pSub(anchorPos, this.tablePos);
                 var scaleAncPos = cc.pMult(tableAncPos, scale / this.tableScale);
-                var fixDelta = cc.pSub(scaleAncPos, tableAncPos);
-                this.tablePos = cc.pSub(this.tablePos, fixDelta);
+                var fixDelta = cc.pSub(tableAncPos, scaleAncPos);
                 this.tableScale = scale;
 
-                this.moveTable(this.tablePos);
+                this.moveTableDelta(fixDelta);
+                console.log(fixDelta);
                 this.tableLayer.setScale(scale);
             },
 
@@ -121,7 +119,7 @@ define(
             },
 
             moveTableDelta: function (deltaPos) {
-                var newPos = cc.pAdd(this,tablePos, deltaPos);
+                var newPos = cc.pAdd(this.tablePos, deltaPos);
                 this.moveTable(newPos);
             },
 

@@ -11,23 +11,25 @@
 define(
     [
         'cocos',
-        'layers/tableLayer'
+        'layers/tableLayer',
+        'layers/zoomTableLayer'
     ],
-    function (cc, TableLayer) {
+    function (cc, TableLayer, ZoomTableLayer) {
     return cc.Scene.extend({
         ctor: function () {
             this._super();
-            this.tableLayer = new TableLayer();
-
-            this.tableLayer.setPosition(
-                (cc.visibleRect.width - TableLayer.TABLE_WIDTH) / 2,
-                (cc.visibleRect.height - TableLayer.TABLE_HEIGHT) / 2);
-
-            this.addChild(this.tableLayer);
 
             if (cc.sys.capabilities['touches']) {
+                this.zoomTableLayer = new ZoomTableLayer();
+                this.tableLayer = this.zoomTableLayer.tableLayer;
+                this.addChild(this.zoomTableLayer);
                 this.initTouch();
             } else {
+                this.tableLayer = new TableLayer();
+                this.tableLayer.setPosition(
+                    (cc.visibleRect.width - TableLayer.TABLE_WIDTH) / 2,
+                    (cc.visibleRect.height - TableLayer.TABLE_HEIGHT) / 2);
+                this.addChild(this.tableLayer);
                 this.initMouse();
             }
         },
