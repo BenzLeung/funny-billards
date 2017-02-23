@@ -41,7 +41,6 @@ define(
                     onTouchesMoved: function (touches, event) {
                         var target = event.getCurrentTarget();
                         var table = target.tableLayer;
-                        if (table.status !== TableLayer.STATUS_WAIT) return false;
                         if (touches.length > 1) {
                             var touch1 = touches[0];
                             var touch2 = touches[1];
@@ -59,6 +58,7 @@ define(
                             target.moveTableDelta(moveDPos);
                             target.zoomTableDelta(scale, ancPos);
                         } else {
+                            if (table.status !== TableLayer.STATUS_WAIT) return false;
                             var touch = touches[0];
                             var delta = touch.getDelta();
                             var curPos = table.ballCursor.getPosition();
