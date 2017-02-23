@@ -77,26 +77,9 @@ define(
                         return false;
                     }
                     return true;
-                },
-                onTouchMoved: function (touch, event) {
-                    var target = event.getCurrentTarget();
-                    var table = target.tableLayer;
-                    if (table.status !== TableLayer.STATUS_WAIT) return false;
-                    var delta = touch.getDelta();
-                    var curPos = table.ballCursor.getPosition();
-                    var theRect = cc.rect(
-                        TableLayer.BALL_RADIUS,
-                        TableLayer.BALL_RADIUS,
-                        TableLayer.TABLE_WIDTH - TableLayer.BALL_RADIUS,
-                        TableLayer.TABLE_HEIGHT - TableLayer.BALL_RADIUS
-                    );
-                    delta = cc.pMult(delta, 0.5);
-                    curPos = cc.pAdd(curPos, delta);
-                    curPos = cc.pClamp(curPos, cc.p(theRect.x, theRect.y), cc.p(theRect.width, theRect.height));
-                    table.setAimLine(curPos);
-                    return true;
                 }
             });
+            cc.eventManager.setPriority(touchListener, -1);
             cc.eventManager.addListener(touchListener, this);
             this.tableLayer.setAimLine(cc.p(TableLayer.TABLE_WIDTH / 2, TableLayer.TABLE_HEIGHT / 2));
 

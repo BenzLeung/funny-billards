@@ -12,11 +12,16 @@ require.config({
     baseUrl: 'js',
     paths: {
         cocos: '../lib/cocos2d-js-v3.13-custom',
+        ccui: '../lib/cocos2d-ccui',
         chipmunk: '../lib/chipmunk'
     },
     shim: {
         cocos: {
             exports: 'cc'
+        },
+        ccui: {
+            deps: ['cocos'],
+            exports: 'ccui'
         },
         chipmunk: {
             exports: 'cp'

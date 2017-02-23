@@ -466,9 +466,10 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
         },
 
-        shootMasterBall: function (pos) {
+        shootMasterBall: function (force, pos) {
             var curPos = this.masterBall.getPosition();
             pos = pos || this.ballCursor.getPosition();
+            force = force || 1.0;
             var dx = pos.x - curPos.x;
             var dy = pos.y - curPos.y;
             if (dx === 0 && dy === 0) {
@@ -476,7 +477,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
             var m_sq = SHOOT_MAX_SPEED * SHOOT_MAX_SPEED / (dx * dx + dy * dy);
             var m = Math.sqrt(m_sq);
-            var v = new cp.Vect(m * dx, m * dy);
+            var v = new cp.Vect(m * dx * force, m * dy * force);
 
             this.masterBall.body.setVel(v);
             this.setRunning(this.masterBall.body.number, true);
