@@ -19,7 +19,7 @@ define(['cocos'], function (cc) {
             this.ignoreAnchorPointForPosition(false);
 
             // 圆心点，半径，弧度，分段(越大越接近圆)，圆心点到弧度的线是否显示，线条宽度，颜色
-            this.drawCircle(cc.p(radius, radius), radius, 0, radius * 4, false, 2, cc.color(255, 255, 255));
+            this.drawCircle(cc.p(radius, radius), radius - 1, 0, radius * 4, false, 2, cc.color(255, 255, 255));
 
             // 起点，终点，线条宽度，线条颜色
             this.drawSegment(cc.p(radius - 5, radius), cc.p(radius + 5, radius), 1, cc.color(255, 255, 255));

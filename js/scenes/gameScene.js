@@ -39,13 +39,13 @@ define(
                 event: cc.EventListener.MOUSE,
                 onMouseMove: function (event) {
                     var target = event.getCurrentTarget();
-                    if (target.status !== TableLayer.STATUS_WAIT) return false;
+                    if (target.status !== TableLayer.STATUS_READY) return false;
                     var pos = target.convertToNodeSpace(event.getLocation());
                     target.setAimLine(pos);
                 },
                 onMouseUp: function (event) {
                     var target = event.getCurrentTarget();
-                    if (target.status !== TableLayer.STATUS_WAIT) return false;
+                    if (target.status !== TableLayer.STATUS_READY) return false;
                     if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
                         target.shootMasterBall();
                     }
@@ -69,14 +69,14 @@ define(
                 onTouchBegan: function (touch, event) {
                     var target = event.getCurrentTarget();
                     var table = target.tableLayer;
-                    if (table.status !== TableLayer.STATUS_WAIT) return false;
+                    if (table.status !== TableLayer.STATUS_READY) return false;
                     var shootButton = target.shootButton;
                     var shootButtonRect = shootButton.getBoundingBox();
                     var touchPos = touch.getLocation();
                     touchPos = cc.pSub(touchPos, cc.visibleRect.bottomLeft);
                     if (cc.rectContainsPoint(shootButtonRect, touchPos)) {
                         var zoomTable = target.zoomTableLayer;
-                        zoomTable.resetTable();
+                        zoomTable.resetTable(true);
                         table.shootMasterBall();
                         return false;
                     }
@@ -88,7 +88,7 @@ define(
             this.tableLayer.setAimLine(cc.p(TableLayer.TABLE_WIDTH / 2, TableLayer.TABLE_HEIGHT / 2));
 
             // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
-            cc.eventManager.addCustomListener('table:status_wait', function () {
+            cc.eventManager.addCustomListener('table:status_ready', function () {
                 this.tableLayer.setAimLine(this.tableLayer.ballCursor.getPosition());
             }.bind(this));
             cc.eventManager.addCustomListener('table:status_running', function () {

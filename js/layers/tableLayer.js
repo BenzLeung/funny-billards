@@ -175,8 +175,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         })();
     }
 
-    var STATUS_WAIT = 0;
+    var STATUS_READY = 0;
     var STATUS_RUNNING = 1;
+    var STATUS_WAIT = 2;
     var STATUS_CLEAR = 10;
 
     var TableLayer = cc.Layer.extend({
@@ -479,8 +480,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             var m = Math.sqrt(m_sq);
             var v = new cp.Vect(m * dx * force, m * dy * force);
 
-            this.masterBall.body.setVel(v);
-            this.setRunning(this.masterBall.body.number, true);
+            this.hideAimLine();
+            this.setStatus(STATUS_WAIT);
+            setTimeout(function () {
+                this.masterBall.body.setVel(v);
+                this.setRunning(this.masterBall.body.number, true);
+            }.bind(this), 450);
         },
 
         resetTable: function () {
@@ -508,7 +513,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 // “与非”运算，把对应的位，置为0 （先非后与）
                 this.runningBit = this.runningBit & (~ballBit);
                 if (!this.runningBit) {
-                    this.setStatus(STATUS_WAIT);
+                    this.setStatus(STATUS_READY);
                 }
             }
         },
@@ -521,8 +526,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.status = status;
             if (status === STATUS_RUNNING) {
                 cc.eventManager.dispatchCustomEvent('table:status_running');
-            } else if (status === STATUS_WAIT) {
-                cc.eventManager.dispatchCustomEvent('table:status_wait');
+            } else if (status === STATUS_READY) {
                 if (this.space.locked) {
                     this.space.addPostStepCallback(function () {
                         this.checkOneTurn();
@@ -530,8 +534,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 } else {
                     this.checkOneTurn();
                 }
+                cc.eventManager.dispatchCustomEvent('table:status_ready');
             } else if (status === STATUS_CLEAR) {
                 cc.eventManager.dispatchCustomEvent('table:status_clear', {turns: this.turns});
+            } else if (status === STATUS_WAIT) {
+                cc.eventManager.dispatchCustomEvent('table:status_wait');
             }
         },
 
@@ -542,12 +549,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.turns ++;
 
             if (this.isMasterGoal) {
-                cc.eventManager.dispatchCustomEvent('table:master_goal');
                 for (i = 0, len = this.goalBallsNumberOneTurn.length; i < len; i ++) {
                     this.resetBall(this.balls[this.goalBallsNumberOneTurn[i]], cc.p(BALL_INITIAL_POS[0], BALL_INITIAL_POS[1]));
                     this.goalBallsNumber.pop();
                 }
                 this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+                cc.eventManager.dispatchCustomEvent('table:master_goal');
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
                     cc.eventManager.dispatchCustomEvent('table:goal', this.goalBallsNumberOneTurn);
@@ -584,6 +591,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
     TableLayer.POCKET_RADIUS = POCKET_RADIUS;
     TableLayer.BALL_RADIUS = BALL_RADIUS;
 
+    TableLayer.STATUS_READY = STATUS_READY;
     TableLayer.STATUS_WAIT = STATUS_WAIT;
     TableLayer.STATUS_RUNNING = STATUS_RUNNING;
     TableLayer.STATUS_CLEAR = STATUS_CLEAR;
