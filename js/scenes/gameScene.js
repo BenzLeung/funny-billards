@@ -22,6 +22,9 @@ define(
             if (cc.sys.capabilities['touches']) {
                 this.zoomTableLayer = new ZoomTableLayer();
                 this.tableLayer = this.zoomTableLayer.tableLayer;
+
+                this.zoomTableLayer.setPosition(cc.visibleRect.bottomLeft);
+                this.zoomTableLayer.setContentSize(cc.visibleRect.width, cc.visibleRect.height);
                 this.addChild(this.zoomTableLayer);
                 this.initTouch();
             } else {
@@ -60,31 +63,19 @@ define(
         },
 
         initTouch: function () {
-            this.shootButton = new cc.LabelTTF('发射!', 'Microsoft Yahei', 100);
-            this.shootButton.setPosition(cc.visibleRect.width / 2, 60);
-            this.addChild(this.shootButton, 5);
+            var shootLabel = new cc.LabelTTF('发射!', 'Microsoft Yahei', 100);
+            this.shootButton = new cc.MenuItemLabel(shootLabel, function () {
+                if (this.tableLayer.status !== TableLayer.STATUS_READY) return;
+                this.zoomTableLayer.resetTable(true);
+                this.tableLayer.shootMasterBall();
+            }, this);
+            var shootButtonMenu = new cc.Menu(this.shootButton);
 
-            var touchListener = cc.EventListener.create({
-                event: cc.EventListener.TOUCH_ONE_BY_ONE,
-                onTouchBegan: function (touch, event) {
-                    var target = event.getCurrentTarget();
-                    var table = target.tableLayer;
-                    if (table.status !== TableLayer.STATUS_READY) return false;
-                    var shootButton = target.shootButton;
-                    var shootButtonRect = shootButton.getBoundingBox();
-                    var touchPos = touch.getLocation();
-                    touchPos = cc.pSub(touchPos, cc.visibleRect.bottomLeft);
-                    if (cc.rectContainsPoint(shootButtonRect, touchPos)) {
-                        var zoomTable = target.zoomTableLayer;
-                        zoomTable.resetTable(true);
-                        table.shootMasterBall();
-                        return false;
-                    }
-                    return true;
-                }
-            });
-            cc.eventManager.setPriority(touchListener, -1);
-            cc.eventManager.addListener(touchListener, this);
+            var winSize = cc.director.getWinSize();
+            shootButtonMenu.setContentSize(cc.visibleRect.width, 130);
+            shootButtonMenu.setPosition(winSize.width / 2, cc.visibleRect.bottom.y + 70);
+            this.addChild(shootButtonMenu);
+
             this.tableLayer.setAimLine(cc.p(TableLayer.TABLE_WIDTH / 2, TableLayer.TABLE_HEIGHT / 2));
 
             // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写

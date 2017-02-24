@@ -15,12 +15,12 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
         "frameRate"     : 60,
         "showFPS"       : true,
         "id"            : "gameCanvas",
-        "renderMode"    : 0
+        "renderMode"    : 1
     };
 
     cc.game.onStart = function(){
         if (cc.sys.isMobile) {
-            cc.view.setDesignResolutionSize(877, 1642, cc.ResolutionPolicy.SHOW_ALL);
+            cc.view.setDesignResolutionSize(1080, 1920, cc.ResolutionPolicy.NO_BORDER);
         } else {
             cc.view.setDesignResolutionSize(1502, 877, cc.ResolutionPolicy.SHOW_ALL);
         }
