@@ -75,6 +75,8 @@ define(
                     var touchPos = touch.getLocation();
                     touchPos = cc.pSub(touchPos, cc.visibleRect.bottomLeft);
                     if (cc.rectContainsPoint(shootButtonRect, touchPos)) {
+                        var zoomTable = target.zoomTableLayer;
+                        zoomTable.resetTable();
                         table.shootMasterBall();
                         return false;
                     }

@@ -74,6 +74,23 @@ define(
                             table.setAimLine(curPos);
                             return true;
                         }
+                    },
+                    onTouchesEnded: function (touches, event) {
+                        var target = event.getCurrentTarget();
+                        var size = target.getContentSize();
+                        if (target.tableScale < 0.5) {
+                            target.zoomTable(0.5, cc.p(size.width, size.height), true);
+                        }
+                        if (target.tableScale > 3.5) {
+                            target.zoomTable(3.5, cc.p(size.width, size.height), true);
+                        }
+                        var clampStart = cc.p(size.width, size.height);
+                        var clampEnd = cc.p(TableLayer.TABLE_WIDTH * target.tableScale, TableLayer.TABLE_HEIGHT * target.tableScale);
+                        clampEnd = cc.pSub(clampStart, clampEnd);
+                        var clamp = cc.pClamp(target.tablePos, clampEnd, clampStart);
+                        if (!cc.pointEqualToPoint(target.tablePos, clamp)) {
+                            target.moveTable(clamp, true);
+                        }
                     }
                 });
                 cc.eventManager.setPriority(touchListener, 10);
@@ -89,22 +106,20 @@ define(
                 }.bind(this));
             },
 
-            zoomTable: function (scale, anchorPos) {
-                if (scale < 0.5) {
-                    scale = 0.5;
-                }
-                if (scale > 3.5) {
-                    scale = 3.5;
-                }
-
+            zoomTable: function (scale, anchorPos, animate) {
                 var tableAncPos = cc.pSub(anchorPos, this.tablePos);
                 var scaleAncPos = cc.pMult(tableAncPos, scale / this.tableScale);
                 var fixDelta = cc.pSub(tableAncPos, scaleAncPos);
                 this.tableScale = scale;
 
-                this.moveTableDelta(fixDelta);
-                console.log(fixDelta);
-                this.tableLayer.setScale(scale);
+                if (animate) {
+                    var newPos = cc.pAdd(this.tablePos, fixDelta);
+                    this.moveTable(newPos, true);
+                    this.tableLayer.runAction(cc.scaleTo(0.3, scale));
+                } else {
+                    this.moveTableDelta(fixDelta);
+                    this.tableLayer.setScale(scale);
+                }
             },
 
             zoomTableDelta: function (deltaScale, anchorPos) {
@@ -112,10 +127,13 @@ define(
                 this.zoomTable(scale, anchorPos);
             },
 
-            moveTable: function (newPos) {
-                // todo: 限制移动的位置，不要超出界面
+            moveTable: function (newPos, animate) {
                 this.tablePos = newPos;
-                this.tableLayer.setPosition(this.tablePos);
+                if (animate) {
+                    this.tableLayer.runAction(cc.moveTo(0.3, newPos));
+                } else {
+                    this.tableLayer.setPosition(this.tablePos);
+                }
             },
 
             moveTableDelta: function (deltaPos) {
@@ -127,12 +145,13 @@ define(
                 var thisSize = this.getContentSize();
                 this.moveTable(cc.p(
                     (thisSize.width - TableLayer.TABLE_WIDTH) / 2,
-                    (thisSize.height - TableLayer.TABLE_HEIGHT) / 2
+                    (thisSize.height - TableLayer.TABLE_HEIGHT) / 2,
+                    true
                 ));
                 var fixWidth = (thisSize.width - 100) / TableLayer.TABLE_WIDTH;
                 var fixHeight = (thisSize.height - 100) / TableLayer.TABLE_HEIGHT;
                 var fixScale = Math.min(fixWidth, fixHeight);
-                this.zoomTable(fixScale, cc.p(thisSize.width * 0.5, thisSize.height * 0.5));
+                this.zoomTable(fixScale, cc.p(thisSize.width * 0.5, thisSize.height * 0.5), true);
             },
 
             onEnter: function () {
