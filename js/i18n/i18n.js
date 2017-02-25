@@ -9,7 +9,7 @@
  * each engineer has a duty to keep the code elegant
  */
 
-define(['i18n/localeList'], function (localeList) {
+define(['cocos', 'i18n/localeList'], function (cc, localeList) {
     var localeContent = {};
 
     var curDictionary = {};
@@ -22,7 +22,7 @@ define(['i18n/localeList'], function (localeList) {
         }
     };
 
-    i18n['defaultFont'] = 'Microsoft Yahei';
+    i18n['defaultFont'] = cc.sys.isMobile ? 'STHeiTi' : 'Microsoft Yahei';
 
     i18n['getLanguageList'] = function () {
         return localeList;
