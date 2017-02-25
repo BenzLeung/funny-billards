@@ -28,7 +28,7 @@ define(
                 this._super();
 
                 this.fixedLayer = new cc.LayerColor(cc.color(0, 0, 0));
-                if (cc.sys.isMobile && cc._renderType === cc.RENDER_TYPE_CANVAS) {
+                if (cc.sys.isMobile && cc._renderType === cc.game.RENDER_TYPE_CANVAS) {
                     this.fixedLayer.setPosition(cc.visibleRect.bottomLeft);
                     this.fixedLayer.setContentSize(cc.visibleRect.width, cc.visibleRect.height);
                 }
@@ -75,7 +75,7 @@ define(
 
                 // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
                 cc.eventManager.addCustomListener('table:status_ready', function () {
-                    this.forceSlider.setValue(100);
+                    //this.forceSlider.setValue(100);
                 }.bind(this));
             },
 
