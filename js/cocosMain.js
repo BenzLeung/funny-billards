@@ -20,28 +20,22 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
 
     var RES = {
         gameScene: [
-            'ball.png',
-            'masterball.png',
+            'res/ball.png',
+            'res/masterball.png',
 
-            'slider-background.png',
-            'slider-progress.png',
-            'slider-thumb.png',
+            'res/slider-background.png',
+            'res/slider-progress.png',
+            'res/slider-thumb.png',
 
-            'btn-menu.png',
+            'res/btn-menu.png',
 
-            'btn-force.png',
-            'btn-force-disabled.png',
+            'res/btn-force.png',
+            'res/btn-force-disabled.png',
 
-            'btn-shoot.png',
-            'btn-shoot-disabled.png'
+            'res/btn-shoot.png',
+            'res/btn-shoot-disabled.png'
         ]
     };
-
-    for (var i in RES) {
-        for (var j = 0, len = RES[i].length; j < len; j ++) {
-            RES[i][j] = 'res/' + RES[i][j];
-        }
-    }
 
     cc.game.onStart = function(){
         if (cc.sys.isMobile) {

@@ -41,7 +41,7 @@ gulp.task('js', ['clean'], function () {
             mainConfigFile: 'js/requireMain.js',
             out: 'script.js'
         }))
-        .pipe(replace(/res\/(.+?).png/g, 'dist/images/$1.png'))
+        .pipe(replace(/res\/([^\\\/]+?)\.png/g, 'dist/images/$1.png'))
         .pipe(replace(/baseUrl\s*:\s*['"]js["']/g, 'baseUrl:"dist/js"'))
         .pipe(gulp.dest(DIST_PATH + '/js'));
     gulp.src('lib/require.js')
