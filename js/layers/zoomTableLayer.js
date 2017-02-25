@@ -2,6 +2,7 @@
  * @file 实现台球桌子用触屏放大缩小的功能
  * @author BenzLeung(https://github.com/BenzLeung)
  * @date 2017/2/23
+ * @class ZoomTableLayer
  * Created by JetBrains PhpStorm.
  *
  * 每位工程师都有保持代码优雅的义务
@@ -155,8 +156,8 @@ define(
 
             resetTable: function (animate) {
                 var thisSize = this.getContentSize();
-                var fixWidth = (thisSize.width - 100) / TableLayer.TABLE_WIDTH;
-                var fixHeight = (thisSize.height - 100) / TableLayer.TABLE_HEIGHT;
+                var fixWidth = (thisSize.width - 50) / TableLayer.TABLE_WIDTH;
+                var fixHeight = (thisSize.height - 50) / TableLayer.TABLE_HEIGHT;
                 var fixScale = Math.min(fixWidth, fixHeight);
                 var newPos = cc.p(
                     (thisSize.width - TableLayer.TABLE_WIDTH * fixScale) / 2,

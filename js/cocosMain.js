@@ -18,6 +18,31 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
         "renderMode"    : 1
     };
 
+    var RES = {
+        gameScene: [
+            'ball.png',
+            'masterball.png',
+
+            'slider-background.png',
+            'slider-progress.png',
+            'slider-thumb.png',
+
+            'btn-menu.png',
+
+            'btn-force.png',
+            'btn-force-disabled.png',
+
+            'btn-shoot.png',
+            'btn-shoot-disabled.png'
+        ]
+    };
+
+    for (var i in RES) {
+        for (var j = 0, len = RES[i].length; j < len; j ++) {
+            RES[i][j] = 'res/' + RES[i][j];
+        }
+    }
+
     cc.game.onStart = function(){
         if (cc.sys.isMobile) {
             cc.view.setDesignResolutionSize(1080, 1920, cc.ResolutionPolicy.NO_BORDER);
@@ -26,7 +51,7 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
         }
         cc.view.setOrientation(cc.ORIENTATION_PORTRAIT);
         cc.view.resizeWithBrowserSize(true);
-        cc.LoaderScene.preload(['res/ball.png', 'res/masterball.png'], function () {
+        cc.LoaderScene.preload(RES.gameScene, function () {
             cc.director.runScene(new GameScene());
         }, this);
     };

@@ -2,6 +2,7 @@
  * @file 用来瞄准球的光标
  * @author BenzLeung(https://github.com/BenzLeung)
  * @date 2017/2/22
+ * @class BallCustom
  * Created by JetBrains PhpStorm.
  *
  * 每位工程师都有保持代码优雅的义务

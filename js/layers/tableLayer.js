@@ -2,6 +2,7 @@
  * @file 台球桌
  * @author BenzLeung(https://github.com/BenzLeung)
  * @date 2017/2/20
+ * @class TableLayer
  * Created by JetBrains PhpStorm.
  *
  * 每位工程师都有保持代码优雅的义务
@@ -219,8 +220,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this._super();
 
             this.setContentSize(TABLE_WIDTH, TABLE_HEIGHT);
-            /*this.ignoreAnchorPointForPosition(false);
-            this.setAnchorPoint(0.5, 0.5);*/
 
             this.space = new cp.Space();
             this.initSpace();
@@ -540,17 +539,25 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             } else if (status === STATUS_WAIT) {
                 cc.eventManager.dispatchCustomEvent('table:status_wait');
             }
+            cc.eventManager.dispatchCustomEvent('table:status_change', {'old': oldStatus, 'new': status});
         },
 
         // 一轮运动结束后的各种检查（母球落袋、是否全清）
         checkOneTurn: function () {
             var i, len;
+            var isClear = false;
 
             this.turns ++;
 
             if (this.isMasterGoal) {
                 for (i = 0, len = this.goalBallsNumberOneTurn.length; i < len; i ++) {
-                    this.resetBall(this.balls[this.goalBallsNumberOneTurn[i]], cc.p(BALL_INITIAL_POS[0], BALL_INITIAL_POS[1]));
+                    this.resetBall(
+                        this.balls[this.goalBallsNumberOneTurn[i]],
+                        cc.p(
+                            BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0],
+                            BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1]
+                        )
+                    );
                     this.goalBallsNumber.pop();
                 }
                 this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
@@ -558,12 +565,17 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
                     cc.eventManager.dispatchCustomEvent('table:goal', this.goalBallsNumberOneTurn);
-                    if (this.ballCount <= 1) {
-                        this.setStatus(STATUS_CLEAR);
+                    if (this.ballCount === 1) {
+                        isClear = true;
                     }
                 } else {
                     cc.eventManager.dispatchCustomEvent('table:no_goal');
                 }
+            }
+
+            cc.eventManager.dispatchCustomEvent('table:one_turn');
+            if (isClear) {
+                this.setStatus(STATUS_CLEAR);
             }
 
             // reset

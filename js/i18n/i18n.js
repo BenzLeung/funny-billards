@@ -22,7 +22,7 @@ define(['i18n/localeList'], function (localeList) {
         }
     };
 
-    i18n['defaultFont'] = 'Tahoma';
+    i18n['defaultFont'] = 'Microsoft Yahei';
 
     i18n['getLanguageList'] = function () {
         return localeList;
