@@ -195,7 +195,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.initSpace();
 
             for (var i = 0; i < 10; i ++) {
-                this.balls.push(this.addBall());
+                var ball = this.addBall();
+                ball.body.number = i;
+                this.balls.push(ball);
             }
 
             this.ballCursor = new BallCursor(BALL_RADIUS);
@@ -205,6 +207,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
             this.masterBall = this.addBall('res/masterball.png');
             this.masterBall.isMaster = true;
+            this.masterBall.body.number = 10;
 
             this.loadTableStateFromLocalStorage();
 
@@ -365,11 +368,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
         addBall: function (pngName) {
             pngName = pngName || 'res/ball.png';
-            var sprite = new Ball(pngName);
-            sprite.body.number = this.ballCount;
-            this.ballCount ++;
-
-            return sprite;
+            return new Ball(pngName);
         },
 
         removeBall: function (ballSprite) {
@@ -486,6 +485,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             if (status === this.status) {
                 return;
             }
+            console.log('status: ' + this.status + ' -> ' + status);
             var oldStatus = this.status;
             this.status = status;
             if (status === STATUS_RUNNING) {
