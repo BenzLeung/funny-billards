@@ -10,10 +10,12 @@
 
 require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
 
+    window.DEBUG_MODE = 1;
+
     cc.game.config = {
-        "debugMode"     : 1,
+        "debugMode"     : DEBUG_MODE,
         "frameRate"     : 60,
-        "showFPS"       : true,
+        "showFPS"       : !!DEBUG_MODE,
         "id"            : "gameCanvas",
         "renderMode"    : 1
     };
