@@ -17,9 +17,10 @@ define(
         'sprites/shootButton',
         'sprites/forceButton',
         'sprites/menuButton',
-        'sprites/forceSlider'
+        'sprites/forceSlider',
+        'i18n/i18n'
     ],
-    function (cc, TableLayer, ZoomTableLayer, ShootButton, ForceButton, MenuButton, ForceSlider) {
+    function (cc, TableLayer, ZoomTableLayer, ShootButton, ForceButton, MenuButton, ForceSlider, i18n) {
         var CONTROL_BAR_HEIGHT = 220;
         var SCORE_BAR_HEIGHT = 98;
 
@@ -101,7 +102,7 @@ define(
                     cc.visibleRect.width - 32 - shootButtonSize.width / 2,
                     50 + shootButtonSize.height / 2
                 );
-                this.fixedLayer.addChild(this.shootButton, 3);
+                this.controlBarBg.addChild(this.shootButton, 3);
 
                 this.shootButton.addTargetWithActionForControlEvents(this, function () {
                     if (this.tableLayer.status !== TableLayer.STATUS_READY) return;
@@ -116,7 +117,7 @@ define(
                     this.shootButton.getBoundingBox().x - 30 - forceButtonSize.width / 2,
                     50 + shootButtonSize.height / 2
                 );
-                this.fixedLayer.addChild(this.forceButton, 3);
+                this.controlBarBg.addChild(this.forceButton, 3);
 
                 this.forceSlider = new ForceSlider();
                 var forceSliderSize = this.forceSlider.getContentSize();
@@ -125,7 +126,7 @@ define(
                     CONTROL_BAR_HEIGHT + forceSliderSize.height / 2
                 );
                 this.forceSlider.setVisible(false);
-                this.fixedLayer.addChild(this.forceSlider, 3);
+                this.controlBarBg.addChild(this.forceSlider, 3);
 
                 this.forceButton.addTargetWithActionForControlEvents(this, function () {
                     if (this.tableLayer.status !== TableLayer.STATUS_READY) return;
@@ -152,6 +153,17 @@ define(
                         this.forceButton.setEnabled(false);
                     }
                 }.bind(this));
+
+                this.menuButton = new MenuButton();
+                var menuButtonSize = this.menuButton.getContentSize();
+                this.menuButton.setPosition(32 + menuButtonSize.width / 2, 50 + menuButtonSize.height / 2);
+                this.controlBarBg.addChild(this.menuButton, 3);
+
+                this.menuButton.addTargetWithActionForControlEvents(this, function () {
+                    this.showMenu();
+                }, cc.CONTROL_EVENT_TOUCH_UP_INSIDE);
+
+                this.initMenu();
             },
 
             showForceCtrl: function () {
@@ -162,6 +174,57 @@ define(
             hideForceCtrl: function () {
                 this.forceSlider.setVisible(false);
                 this.controlBarBg.setContentSize(cc.visibleRect.width, CONTROL_BAR_HEIGHT);
+            },
+
+            initMenu: function () {
+                var MENU_FONT_SIZE = 72;
+                var MENU_COLOR = new cc.Color(0, 255, 0);
+
+                var resumeLabel = new cc.LabelTTF(i18n('继续'), i18n.defaultFont, MENU_FONT_SIZE);
+                resumeLabel.setColor(MENU_COLOR);
+                var resumeMenuItem = new cc.MenuItemLabel(resumeLabel, this.hideMenu.bind(this), this);
+
+                var restartGameLabel = new cc.LabelTTF(i18n('重新开始'), i18n.defaultFont, MENU_FONT_SIZE);
+                restartGameLabel.setColor(MENU_COLOR);
+                var restartGameMenuItem = new cc.MenuItemLabel(restartGameLabel, this.restartGame.bind(this), this);
+
+                this.pauseMenuLayer = new cc.LayerColor(cc.color(0, 0, 0, 128));
+                this.pauseMenuLayer.setContentSize(this.fixedLayer.getContentSize());
+                this.pauseMenuLayer.setVisible(false);
+                this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem);
+                this.pauseMenu.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2);
+                this.pauseMenu.alignItemsVerticallyWithPadding(30);
+                this.pauseMenuLayer.addChild(this.pauseMenu);
+
+                this.fixedLayer.addChild(this.pauseMenuLayer, 10);
+            },
+
+            showMenu: function () {
+                this.pauseMenuLayer.setVisible(true);
+                this.tableLayer.pause();
+                if (this.zoomTableLayer) {
+                    this.zoomTableLayer.pause();
+                }
+                if (this.controlBarBg) {
+                    this.controlBarBg.setVisible(false);
+                }
+            },
+
+            hideMenu: function () {
+                this.pauseMenuLayer.setVisible(false);
+                if (this.controlBarBg) {
+                    this.controlBarBg.setVisible(true);
+                }
+                if (this.zoomTableLayer) {
+                    this.zoomTableLayer.resume();
+                }
+                this.tableLayer.resume();
+            },
+
+            restartGame: function () {
+                if (this.tableLayer.turns > 2 && !confirm(i18n('确定要放弃当前游戏进度么？'))) {return;}
+                this.hideMenu();
+                this.tableLayer.resetTable();
             }
         });
 });

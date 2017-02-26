@@ -24,41 +24,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
     var TABLE_WIDTH = 1402;
     var TABLE_HEIGHT = 777;
 
-    // 墙壁半径
-    /*var S;
-    var WALL_RADIUS = S = 10;
-    // 墙壁位置（线段版）
-    var WALL_SEGMENTS = [
-        // 下边
-        [cp.v(123+S, 77-S), cp.v(663-S, 77-S)],
-        [cp.v(741+S, 77-S), cp.v(1279-S, 77-S)],
-        // 上边
-        [cp.v(123+S, 700+S), cp.v(663-S, 700+S)],
-        [cp.v(741+S, 700+S), cp.v(1279-S, 700+S)],
-        // 左边
-        [cp.v(77-S, 123+S), cp.v(77-S, 654-S)],
-        // 右边
-        [cp.v(1325+S, 123+S), cp.v(1325+S, 654-S)],
-        // 左下袋
-        [cp.v(77-S, 123+S), cp.v(0-S, 46+S)],
-        [cp.v(123+S, 77-S), cp.v(46+S, 0-S)],
-        // 左上袋
-        [cp.v(77-S, 654-S), cp.v(0-S, 731-S)],
-        [cp.v(123+S, 700+S), cp.v(46+S, 777+S)],
-        // 右下袋
-        [cp.v(1279-S, 77-S), cp.v(1356-S, 0-S)],
-        [cp.v(1325+S, 123+S), cp.v(1402+S, 46+S)],
-        // 右上袋
-        [cp.v(1279-S, 700+S), cp.v(1356-S, 777+S)],
-        [cp.v(1325+S, 654-S), cp.v(1402+S, 731-S)],
-        // 下中袋
-        [cp.v(663-S, 77-S), cp.v(672-S, 33-S)],
-        [cp.v(741+S, 77-S), cp.v(732+S, 33-S)],
-        // 上中袋
-        [cp.v(663-S, 700+S), cp.v(672-S, 733+S)],
-        [cp.v(741+S, 700+S), cp.v(732+S, 733+S)]
-    ];*/
-
     // 墙壁位置（多边形版）
     var WALL_POLYGONS = [
         // 下左边
@@ -140,14 +105,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             t = TABLE_WIDTH;
             TABLE_WIDTH = TABLE_HEIGHT;
             TABLE_HEIGHT = t;
-            /*for (i = 0; i < WALL_SEGMENTS.length; i ++) {
-                for (j = 0; j < WALL_SEGMENTS[i].length; j ++) {
-                    v = WALL_SEGMENTS[i][j];
-                    t = v.x;
-                    v.x = v.y;
-                    v.y = t;
-                }
-            }*/
             for (i = 0; i < WALL_POLYGONS.length; i ++) {
                 WALL_POLYGONS[i] = WALL_POLYGONS[i].reverse();
             }
@@ -186,6 +143,16 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         // 母球 sprite
         masterBall: null,
 
+        // 发射后记录信息在此，方便存档
+        shoot: {
+            shooting: false,
+            force: 0,
+            cursor: {
+                x : 0,
+                y : 0
+            }
+        },
+
         // 球 sprite 数组（不含母球）
         balls: [],
 
@@ -216,6 +183,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         // 记录本次运转是否进了母球
         isMasterGoal: false,
 
+        // 记录连击数
+        combo: 0,
+
         ctor : function () {
             this._super();
 
@@ -225,9 +195,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.initSpace();
 
             for (var i = 0; i < 10; i ++) {
-                var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
-                var y = BALL_INITIAL_POS[1] + BALLS_INITIAL_REL_POS[i][1];
-                this.balls.push(this.addBall(cc.p(x, y), cp.vzero));
+                this.balls.push(this.addBall());
             }
 
             this.ballCursor = new BallCursor(BALL_RADIUS);
@@ -235,8 +203,10 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.addChild(this.ballLine, 11);
             this.addChild(this.ballCursor, 12);
 
-            this.masterBall = this.addBall(cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]), cp.vzero, 'res/masterball.png');
+            this.masterBall = this.addBall('res/masterball.png');
             this.masterBall.isMaster = true;
+
+            this.loadTableStateFromLocalStorage();
 
             this.scheduleUpdate();
 
@@ -249,7 +219,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 alert('进白球啦！');
             }.bind(this));
             cc.eventManager.addCustomListener('table:goal', function (event) {
-                alert('进了%d个球啦！'.replace('%d', event.getUserData().length));
+                alert('进了%d个球啦！'.replace('%d', event.getUserData()['goals'].length));
             }.bind(this));
         },
 
@@ -274,20 +244,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             desktop.setSensor(true);
             desktop.setCollisionType(1);
             space.addStaticShape(desktop);
-
-            // 创建墙壁（线段版）
-            /*for(i=0; i < WALL_SEGMENTS.length; i++ ) {
-                wall = new cp.SegmentShape(staticBody,
-                    WALL_SEGMENTS[i][0],
-                    WALL_SEGMENTS[i][1],
-                    WALL_RADIUS);
-                // 弹性
-                wall.setElasticity(1);
-                // 摩擦力
-                wall.setFriction(0.1);
-                // 加入固定不动的物体（墙）到物理空间
-                space.addStaticShape(wall);
-            }*/
 
             // 创建墙壁（多边形版）
             for (i = 0; i < WALL_POLYGONS.length; i ++) {
@@ -389,11 +345,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
 
             space.addPostStepCallback(function () {
-                space.removeBody(ballBody);
-                space.removeShape(ballShape);
-                ballSprite.removeFromParent(true);
-                this.ballCount --;
-                this.setRunning(ballBody.number, false);
+                this.removeBall(ballSprite);
             }.bind(this));
 
             return false;
@@ -411,21 +363,24 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this._super();
         },
 
-        addBall: function (pos, vel, pngName) {
+        addBall: function (pngName) {
             pngName = pngName || 'res/ball.png';
             var sprite = new Ball(pngName);
-            sprite.setPosition(pos);
-            sprite.body.setVel(vel);
             sprite.body.number = this.ballCount;
-            if (!cp.v.eql(vel, cp.vzero)) {
-                this.setRunning(this.ballCount, true);
-            }
             this.ballCount ++;
-            this.space.addBody(sprite.body);
-            this.space.addShape(sprite.shape);
-            this.addChild(sprite, 5);
 
             return sprite;
+        },
+
+        removeBall: function (ballSprite) {
+            var ballBody = ballSprite.body;
+            var ballShape = ballSprite.shape;
+            if (ballBody.isRogue()) {return;}
+            this.space.removeBody(ballBody);
+            this.space.removeShape(ballShape);
+            ballSprite.removeFromParent(true);
+            this.ballCount --;
+            this.setRunning(ballBody.number, false);
         },
 
         resetBall: function (ballSprite, pos) {
@@ -481,6 +436,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
             this.hideAimLine();
             this.setStatus(STATUS_WAIT);
+            this.shoot.shooting = true;
+            this.shoot.force = force;
+            this.shoot.cursor.x = pos.x;
+            this.shoot.cursor.y = pos.y;
+            this.saveTableStateToLocalStorage();
             setTimeout(function () {
                 this.masterBall.body.setVel(v);
                 this.setRunning(this.masterBall.body.number, true);
@@ -498,6 +458,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
             this.goalBallsNumber = [];
             this.turns = 0;
+            this.isMasterGoal = false;
+            this.goalBallsNumberOneTurn = [];
+            this.combo = 0;
+            this.shoot.shooting = false;
+
             this.setStatus(STATUS_RUNNING);
         },
 
@@ -529,13 +494,17 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 if (this.space.locked) {
                     this.space.addPostStepCallback(function () {
                         this.checkOneTurn();
+                        cc.eventManager.dispatchCustomEvent('table:status_ready');
+                        this.saveTableStateToLocalStorage();
                     }.bind(this));
                 } else {
                     this.checkOneTurn();
+                    cc.eventManager.dispatchCustomEvent('table:status_ready');
+                    this.saveTableStateToLocalStorage();
                 }
-                cc.eventManager.dispatchCustomEvent('table:status_ready');
             } else if (status === STATUS_CLEAR) {
                 cc.eventManager.dispatchCustomEvent('table:status_clear', {turns: this.turns});
+                this.removeTableStateToLocalStorage();
             } else if (status === STATUS_WAIT) {
                 cc.eventManager.dispatchCustomEvent('table:status_wait');
             }
@@ -564,11 +533,17 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 cc.eventManager.dispatchCustomEvent('table:master_goal');
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
-                    cc.eventManager.dispatchCustomEvent('table:goal', this.goalBallsNumberOneTurn);
+                    this.combo ++;
+                    cc.eventManager.dispatchCustomEvent('table:goal', {
+                        goals: this.goalBallsNumberOneTurn,
+                        turns: this.turns,
+                        combo: this.combo
+                    });
                     if (this.ballCount === 1) {
                         isClear = true;
                     }
                 } else {
+                    this.combo = 0;
                     cc.eventManager.dispatchCustomEvent('table:no_goal');
                 }
             }
@@ -581,6 +556,82 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             // reset
             this.isMasterGoal = false;
             this.goalBallsNumberOneTurn = [];
+            this.shoot.shooting = false;
+        },
+
+        getTableStateJSON: function () {
+            var json = {
+                'masterBall' : {
+                    'x' : this.masterBall.getPositionX(),
+                    'y' : this.masterBall.getPositionY(),
+                    'shooting' : this.shoot.shooting,
+                    'force' : this.shoot.force,
+                    'cursor' : {
+                        'x' : this.shoot.cursor.x,
+                        'y' : this.shoot.cursor.y
+                    }
+                },
+                'balls' : [],
+                'turns' : this.turns,
+                'goalBallsNumber' : this.goalBallsNumber.slice(0)
+            };
+            var i, len;
+            var goalBallsHash = {};
+            for (i = 0, len = json.goalBallsNumber.length; i < len; i ++) {
+                goalBallsHash[json.goalBallsNumber[i]] = true;
+            }
+            for (i = 0, len = this.balls.length; i < len; i ++) {
+                json.balls.push({
+                    'x' : this.balls[i].getPositionX(),
+                    'y' : this.balls[i].getPositionY(),
+                    'isGoal' : !!goalBallsHash[i]
+                });
+            }
+            return json;
+        },
+
+        loadTableStateByJSON: function (jsonObject) {
+            var i, len;
+            var pos;
+            var ball;
+            pos = cc.p(jsonObject.masterBall.x, jsonObject.masterBall.y);
+            this.resetBall(this.masterBall, pos);
+            for (i = 0, len = this.balls.length; i < len; i ++) {
+                ball = jsonObject.balls[i];
+                pos = cc.p(ball.x, ball.y);
+                if (ball.isGoal) {
+                    this.removeBall(this.balls[i]);
+                } else {
+                    this.resetBall(this.balls[i], pos);
+                }
+            }
+            this.turns = jsonObject.turns;
+            this.goalBallsNumber = jsonObject.goalBallsNumber;
+            this.setStatus(STATUS_READY);
+            if (jsonObject.masterBall.shooting) {
+                pos = cc.p(jsonObject.masterBall.cursor.x, jsonObject.masterBall.cursor.y);
+                this.shootMasterBall(jsonObject.masterBall.force, pos);
+            }
+        },
+
+        saveTableStateToLocalStorage: function () {
+            var jsonObject = this.getTableStateJSON();
+            var jsonString = JSON.stringify(jsonObject);
+            cc.sys.localStorage.setItem('tableState', jsonString);
+        },
+
+        loadTableStateFromLocalStorage: function () {
+            var jsonString = cc.sys.localStorage.getItem('tableState');
+            if (jsonString) {
+                var jsonObject = JSON.parse(jsonString);
+                this.loadTableStateByJSON(jsonObject);
+            } else {
+                this.resetTable();
+            }
+        },
+
+        removeTableStateToLocalStorage: function () {
+            cc.sys.localStorage.removeItem('tableState');
         },
 
         update: function (dt) {

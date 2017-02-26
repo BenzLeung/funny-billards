@@ -22,7 +22,7 @@ define(['cocos', 'i18n/localeList'], function (cc, localeList) {
         }
     };
 
-    i18n['defaultFont'] = cc.sys.isMobile ? 'STHeiTi' : 'Microsoft Yahei';
+    i18n['defaultFont'] = cc.sys.isMobile ? 'Helvetica Neue' : 'Microsoft Yahei';
 
     i18n['getLanguageList'] = function () {
         return localeList;
