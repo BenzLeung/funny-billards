@@ -35,6 +35,11 @@ gulp.task('images', ['clean'], function () {
         .pipe(gulp.dest(DIST_PATH + '/images'));
 });
 
+gulp.task('sounds', ['clean'], function () {
+    gulp.src('res/*.mp3')
+        .pipe(gulp.dest(DIST_PATH + '/sounds'));
+});
+
 gulp.task('js', ['clean'], function () {
     gulp.src('js/requireMain.js')
         .pipe(requireJsOptimize({
@@ -43,6 +48,7 @@ gulp.task('js', ['clean'], function () {
         }))
         .pipe(replace(/DEBUG_MODE=1/g, 'DEBUG_MODE=0'))
         .pipe(replace(/res\/([^\\\/]+?)\.png/g, 'dist/images/$1.png'))
+        .pipe(replace(/res\/([^\\\/]+?)\.mp3/g, 'dist/sounds/$1.png'))
         .pipe(replace(/baseUrl\s*:\s*['"]js["']/g, 'baseUrl:"dist/js"'))
         .pipe(gulp.dest(DIST_PATH + '/js'));
     gulp.src('lib/require.js')
@@ -67,4 +73,4 @@ gulp.task('html', ['clean'], function () {
         .pipe(gulp.dest('.'));
 });
 
-gulp.task('default', ['images', 'js', 'css', 'html']);
+gulp.task('default', ['images', 'sounds', 'js', 'css', 'html']);
