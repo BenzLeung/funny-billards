@@ -14,13 +14,14 @@ define(
         'cocos',
         'layers/tableLayer',
         'layers/zoomTableLayer',
+        'layers/middleMsgLayer',
         'sprites/shootButton',
         'sprites/forceButton',
         'sprites/menuButton',
         'sprites/forceSlider',
         'i18n/i18n'
     ],
-    function (cc, TableLayer, ZoomTableLayer, ShootButton, ForceButton, MenuButton, ForceSlider, i18n) {
+    function (cc, TableLayer, ZoomTableLayer, MiddleMsgLayer, ShootButton, ForceButton, MenuButton, ForceSlider, i18n) {
         var CONTROL_BAR_HEIGHT = 220;
         var SCORE_BAR_HEIGHT = 98;
 
@@ -53,6 +54,12 @@ define(
                 }
 
                 this.force = 100;
+
+                this.middleMsgLayer = new MiddleMsgLayer();
+                this.fixedLayer.addChild(this.middleMsgLayer, 2);
+
+                this.initScoreBar();
+                this.initTableClear();
             },
 
             initMouse: function () {
@@ -89,6 +96,25 @@ define(
                 cc.eventManager.addCustomListener('table:status_ready', function () {
                     this.tableLayer.setAimLine(this.tableLayer.ballCursor.getPosition());
                     this.forceSlider.setValue(100);
+                }.bind(this));
+            },
+
+            initScoreBar: function () {
+                this.scoreBarBg = new cc.LayerColor(cc.color(0, 0, 0, 128), cc.visibleRect.width, SCORE_BAR_HEIGHT);
+                this.scoreBarBg.setPosition(0, cc.visibleRect.height - SCORE_BAR_HEIGHT);
+                this.fixedLayer.addChild(this.scoreBarBg, 2);
+
+                this.turnsLabel = new cc.LabelTTF(i18n('回合 %d').replace('%d', this.tableLayer.turns + 1), i18n.defaultFont, 48);
+                this.turnsLabel.setColor(cc.color(0, 255, 0));
+                this.turnsLabel.setPosition(cc.visibleRect.width / 2, SCORE_BAR_HEIGHT / 2);
+                this.scoreBarBg.addChild(this.turnsLabel);
+
+                cc.eventManager.addCustomListener('table:status_ready', function () {
+                    this.turnsLabel.setString(i18n('回合 %d').replace('%d', this.tableLayer.turns + 1));
+                }.bind(this));
+
+                cc.eventManager.addCustomListener('table:reset', function () {
+                    this.turnsLabel.setString(i18n('回合 %d').replace('%d', 1));
                 }.bind(this));
             },
 
@@ -141,6 +167,14 @@ define(
                     this.force = this.forceSlider.getValue();
                     this.forceButton.setForceNumber(this.force);
                 }, cc.CONTROL_EVENT_VALUECHANGED);
+
+                this.force = this.tableLayer.shoot.force * 100 || 100;
+                this.forceSlider.setValue(this.force);
+
+                cc.eventManager.addCustomListener('table:reset', function () {
+                    this.force = 100;
+                    this.forceSlider.setValue(100);
+                }.bind(this));
 
                 cc.eventManager.addCustomListener('table:status_change', function (event) {
                     var data = event.getUserData();
@@ -201,6 +235,15 @@ define(
 
             showMenu: function () {
                 this.pauseMenuLayer.setVisible(true);
+                this.pauseGame();
+            },
+
+            hideMenu: function () {
+                this.pauseMenuLayer.setVisible(false);
+                this.resumeGame();
+            },
+
+            pauseGame: function () {
                 this.tableLayer.pause();
                 if (this.zoomTableLayer) {
                     this.zoomTableLayer.pause();
@@ -210,8 +253,7 @@ define(
                 }
             },
 
-            hideMenu: function () {
-                this.pauseMenuLayer.setVisible(false);
+            resumeGame: function () {
                 if (this.controlBarBg) {
                     this.controlBarBg.setVisible(true);
                 }
@@ -225,6 +267,49 @@ define(
                 if (this.tableLayer.turns > 2 && !confirm(i18n('确定要放弃当前游戏进度么？'))) {return;}
                 this.hideMenu();
                 this.tableLayer.resetTable();
+            },
+
+            initTableClear: function () {
+                var v = cc.visibleRect;
+
+                this.clearLayer = new cc.LayerColor(cc.color(0, 0, 0, 128), v.width, v.height);
+                this.clearLayer.setVisible(false);
+                this.fixedLayer.addChild(this.clearLayer, 3);
+
+                this.gameOverLabel = new cc.LabelTTF(i18n('清空!'), i18n.defaultFont, 128);
+                this.gameOverLabel.setPosition(v.width / 2, v.height / 2 + 280);
+                this.gameOverLabel.setColor(new cc.Color(128, 255, 128));
+                this.clearLayer.addChild(this.gameOverLabel, 1);
+
+                this.finalScoreLabel = new cc.LabelTTF(i18n('你用了 %d 回合').replace('%d', this.tableLayer.turns), i18n.defaultFont, 96);
+                this.finalScoreLabel.setPosition(v.width / 2, v.height / 2 + 128);
+                this.finalScoreLabel.setColor(new cc.Color(255, 255, 255));
+                this.clearLayer.addChild(this.finalScoreLabel, 1);
+
+                var replayLabel = new cc.LabelTTF(i18n('再来一局'), i18n.defaultFont, 72);
+                replayLabel.setColor(new cc.Color(0, 255, 0));
+                replayLabel.enableStroke(new cc.Color(10, 10, 10), 2);
+                var replayItem = new cc.MenuItemLabel(replayLabel, function () {
+                    this.resumeGame();
+                    this.tableLayer.resetTable();
+                    this.clearLayer.setVisible(false);
+                }, this);
+                /*var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
+                exitLabel.setColor(new cc.Color(0, 255, 0));
+                exitLabel.enableStroke(new cc.Color(10, 10, 10), 2);
+                var exitItem = new  cc.MenuItemLabel(exitLabel, function () {
+                    // todo
+                }, this);*/
+                this.replayMenu = new cc.Menu(replayItem/*, exitItem*/);
+                this.replayMenu.setPosition(v.width / 2, v.height * 0.4);
+                this.replayMenu.alignItemsVerticallyWithPadding(30);
+                this.clearLayer.addChild(this.replayMenu, 1);
+
+                cc.eventManager.addCustomListener('table:status_clear', function (event) {
+                    this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', event.getUserData()['turns']));
+                    this.clearLayer.setVisible(true);
+                    this.pauseGame();
+                }.bind(this));
             }
         });
 });

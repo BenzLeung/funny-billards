@@ -214,16 +214,16 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.scheduleUpdate();
 
             // todo:临时代码（清理）
-            cc.eventManager.addCustomListener('table:status_clear', function (event) {
+            /*cc.eventManager.addCustomListener('table:status_clear', function (event) {
                 alert('清袋！你用了%d回合！'.replace('%d', event.getUserData()['turns']));
                 this.resetTable();
-            }.bind(this));
-            cc.eventManager.addCustomListener('table:master_goal', function () {
+            }.bind(this));*/
+            /*cc.eventManager.addCustomListener('table:master_goal', function () {
                 alert('进白球啦！');
             }.bind(this));
             cc.eventManager.addCustomListener('table:goal', function (event) {
                 alert('进了%d个球啦！'.replace('%d', event.getUserData()['goals'].length));
-            }.bind(this));
+            }.bind(this));*/
         },
 
         initSpace : function () {
@@ -394,6 +394,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
         },
 
+        resetMasterBall: function () {
+            this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+            this.setAimLine(this.ballCursor.getPosition());
+        },
+
         showAimLine: function () {
             this.ballCursor.setVisible(true);
             this.ballLine.setVisible(true);
@@ -447,7 +452,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         },
 
         resetTable: function () {
-            this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+            this.resetMasterBall();
 
             for (var i = 0, len = this.balls.length; i < len; i ++) {
                 var x = BALL_INITIAL_POS[0] + BALLS_INITIAL_REL_POS[i][0];
@@ -461,8 +466,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.goalBallsNumberOneTurn = [];
             this.combo = 0;
             this.shoot.shooting = false;
+            this.setStatus(STATUS_READY);
+            this.turns = 0;
+            this.space.step(0.1);
+            this.saveTableStateToLocalStorage();
 
-            this.setStatus(STATUS_RUNNING);
+            cc.eventManager.dispatchCustomEvent('table:reset');
         },
 
         setRunning: function (ballNumber, isRunning) {
@@ -529,7 +538,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                     );
                     this.goalBallsNumber.pop();
                 }
-                this.resetBall(this.masterBall, cc.p(MASTER_INITIAL_POS[0], MASTER_INITIAL_POS[1]));
+                this.resetMasterBall();
                 cc.eventManager.dispatchCustomEvent('table:master_goal');
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
@@ -573,6 +582,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 },
                 'balls' : [],
                 'turns' : this.turns,
+                'combo' : this.combo,
                 'goalBallsNumber' : this.goalBallsNumber.slice(0)
             };
             var i, len;
@@ -606,8 +616,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 }
             }
             this.turns = jsonObject.turns;
+            this.combo = jsonObject.combo;
             this.goalBallsNumber = jsonObject.goalBallsNumber;
             this.setStatus(STATUS_READY);
+            this.turns = jsonObject.turns;
+            this.combo = jsonObject.combo;
+            this.goalBallsNumber = jsonObject.goalBallsNumber;
             if (jsonObject.masterBall.shooting) {
                 pos = cc.p(jsonObject.masterBall.cursor.x, jsonObject.masterBall.cursor.y);
                 this.shootMasterBall(jsonObject.masterBall.force, pos);
