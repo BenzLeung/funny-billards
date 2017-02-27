@@ -218,6 +218,22 @@ define(
                 resumeLabel.setColor(MENU_COLOR);
                 var resumeMenuItem = new cc.MenuItemLabel(resumeLabel, this.hideMenu.bind(this), this);
 
+                this.enableSound = true;
+                var toggleSfxLabel = new cc.LabelTTF(i18n('音效：开'), i18n.defaultFont, MENU_FONT_SIZE);
+                toggleSfxLabel.setColor(MENU_COLOR);
+                var toggleSfxMenuItem = new cc.MenuItemLabel(toggleSfxLabel, function () {
+                    if (this.enableSound) {
+                        toggleSfxMenuItem.setString(i18n('音效：关'));
+                        this.enableSound = false;
+                        cc.audioEngine.setEffectsVolume(0.0);
+                    } else {
+                        toggleSfxMenuItem.setString(i18n('音效：开'));
+                        this.enableSound = true;
+                        cc.audioEngine.setEffectsVolume(1.0);
+                        cc.audioEngine.playEffect('res/hit-ball.mp3');
+                    }
+                }.bind(this), this);
+
                 var restartGameLabel = new cc.LabelTTF(i18n('重新开始'), i18n.defaultFont, MENU_FONT_SIZE);
                 restartGameLabel.setColor(MENU_COLOR);
                 var restartGameMenuItem = new cc.MenuItemLabel(restartGameLabel, this.restartGame.bind(this), this);
@@ -225,7 +241,7 @@ define(
                 this.pauseMenuLayer = new cc.LayerColor(cc.color(0, 0, 0, 128));
                 this.pauseMenuLayer.setContentSize(this.fixedLayer.getContentSize());
                 this.pauseMenuLayer.setVisible(false);
-                this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem);
+                this.pauseMenu = new cc.Menu(resumeMenuItem, toggleSfxMenuItem, restartGameMenuItem);
                 this.pauseMenu.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2);
                 this.pauseMenu.alignItemsVerticallyWithPadding(30);
                 this.pauseMenuLayer.addChild(this.pauseMenu);

@@ -75,22 +75,23 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         ];
         var i, j;
         var y, x;
-        var xStep = 0 - Math.sqrt(BALL_RADIUS * BALL_RADIUS * 3 );
+        var r = BALL_RADIUS + 1;
+        var xStep = 0 - Math.sqrt(r * r * 3 );
         x = xStep;
         for (i = 1; i < 5; i ++) {
             // 奇数列从中央开始，偶数列从两边开始
             if (i % 2 === 0) {
                 // 奇数列先把中间的填了（i为偶数的列才是奇数列）
                 pos.push([x, 0]);
-                y = BALL_RADIUS * 2;
+                y = r * 2;
             } else {
-                y = BALL_RADIUS;
+                y = r;
             }
             // 第2列有2个球、第3列有3个球
             for (j = 0; j < i / 2; j ++) {
                 pos.push([x, y]);
                 pos.push([x, 0-y]);
-                y += (BALL_RADIUS * 2);
+                y += (r * 2);
             }
             x += xStep;
         }
@@ -453,8 +454,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         },
 
         resetTable: function () {
-            this.mute = true;
-
             this.resetMasterBall();
 
             for (var i = 0, len = this.balls.length; i < len; i ++) {
@@ -473,8 +472,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.turns = 0;
             this.space.step(1);
             this.saveTableStateToLocalStorage();
-
-            this.mute = false;
 
             cc.eventManager.dispatchCustomEvent('table:reset');
         },
