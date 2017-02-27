@@ -47,8 +47,8 @@ gulp.task('js', ['clean'], function () {
             out: 'script.js'
         }))
         .pipe(replace(/DEBUG_MODE=1/g, 'DEBUG_MODE=0'))
-        .pipe(replace(/res\/([^\\\/]+?)\.png/g, 'dist/images/$1.png'))
-        .pipe(replace(/res\/([^\\\/]+?)\.mp3/g, 'dist/sounds/$1.png'))
+        .pipe(replace(/res\/([^\\\/'"]+?)\.png/g, 'dist/images/$1.png'))
+        .pipe(replace(/res\/([^\\\/'"]+?)\.mp3/g, 'dist/sounds/$1.mp3'))
         .pipe(replace(/baseUrl\s*:\s*['"]js["']/g, 'baseUrl:"dist/js"'))
         .pipe(gulp.dest(DIST_PATH + '/js'));
     gulp.src('lib/require.js')
@@ -67,6 +67,7 @@ gulp.task('css', ['clean'], function () {
 
 gulp.task('html', ['clean'], function () {
     gulp.src('index-src.html')
+        .pipe(replace(/v=\{timestamp}/g, 'v=' + (new Date()).getTime()))
         .pipe(processHtml())
         .pipe(minifyHtml())
         .pipe(rename('index.html'))

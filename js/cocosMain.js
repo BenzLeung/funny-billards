@@ -35,7 +35,13 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
             'res/btn-force-disabled.png',
 
             'res/btn-shoot.png',
-            'res/btn-shoot-disabled.png'
+            'res/btn-shoot-disabled.png',
+
+            'res/goal.mp3',
+            'res/hit-ball.mp3',
+            'res/hit-wall.mp3',
+            'res/lost-master.mp3',
+            'res/shoot.mp3'
         ]
     };
 

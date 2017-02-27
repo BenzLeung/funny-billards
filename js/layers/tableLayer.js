@@ -186,6 +186,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         // 记录连击数
         combo: 0,
 
+        // 是否静音（不是用来给用户控制静音的，而是因为复位球的时候会产生碰撞……）
+        mute: false,
+
         ctor : function () {
             this._super();
 
@@ -245,6 +248,8 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 wall.setElasticity(1);
                 // 摩擦力
                 wall.setFriction(0.1);
+                // 碰撞物件类型标识（方便自定义碰撞事件）
+                wall.setCollisionType(3);
                 // 加入固定不动的物体（墙）到物理空间
                 space.addStaticShape(wall);
             }
@@ -256,21 +261,14 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 pocket = new cp.CircleShape(staticBody, pocketBodyRadius, cp.v(POCKET_POS[i][0], POCKET_POS[i][1]));
                 pocket.setElasticity(0);
                 pocket.setFriction(0);
-                pocket.setSensor(true);pocket.setCollisionType(2);
+                pocket.setSensor(true);
+                pocket.setCollisionType(2);
                 space.addStaticShape(pocket);
             }
 
             // 调试显示
             this._debugNode = new cc.PhysicsDebugNode(this.space);
             this.addChild(this._debugNode, 1);
-        },
-
-        initMouse: function () {
-
-        },
-
-        initTouch: function () {
-
         },
 
         desktopPreSolve: function (arbiter, space) {
@@ -330,9 +328,11 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
             if (ballSprite.isMaster) {
                 this.isMasterGoal = true;
+                this.playEffect('res/lost-master.mp3');
             } else {
                 this.goalBallsNumberOneTurn.push(ballBody.number);
                 this.goalBallsNumber.push(ballBody.number);
+                this.playEffect('res/goal.mp3');
             }
 
             space.addPostStepCallback(function () {
@@ -342,10 +342,22 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             return false;
         },
 
+        wallCollisionBegan: function () {
+            this.playEffect('res/hit-wall.mp3');
+            return true;
+        },
+
+        ballCollisionBegan: function () {
+            this.playEffect('res/hit-ball.mp3');
+            return true;
+        },
+
         onEnter: function() {
             this._super();
             this.space.addCollisionHandler(1, 0, null, this.desktopPreSolve.bind(this), null, null);
             this.space.addCollisionHandler(2, 0, this.pocketCollisionBegan.bind(this), null, null, null);
+            this.space.addCollisionHandler(3, 0, this.wallCollisionBegan.bind(this), null, null, null);
+            this.space.addCollisionHandler(0, 0, this.ballCollisionBegan.bind(this), null, null, null);
         },
 
         onExit: function() {
@@ -436,10 +448,13 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             setTimeout(function () {
                 this.masterBall.body.setVel(v);
                 this.setRunning(this.masterBall.body.number, true);
+                this.playEffect('res/shoot.mp3');
             }.bind(this), 450);
         },
 
         resetTable: function () {
+            this.mute = true;
+
             this.resetMasterBall();
 
             for (var i = 0, len = this.balls.length; i < len; i ++) {
@@ -456,8 +471,10 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.shoot.shooting = false;
             this.setStatus(STATUS_READY);
             this.turns = 0;
-            this.space.step(0.1);
+            this.space.step(1);
             this.saveTableStateToLocalStorage();
+
+            this.mute = false;
 
             cc.eventManager.dispatchCustomEvent('table:reset');
         },
@@ -635,6 +652,12 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
 
         removeTableStateToLocalStorage: function () {
             cc.sys.localStorage.removeItem('tableState');
+        },
+
+        playEffect: function (res) {
+            if (!this.mute) {
+                cc.audioEngine.playEffect(res);
+            }
         },
 
         update: function (dt) {
