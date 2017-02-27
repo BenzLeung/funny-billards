@@ -306,9 +306,16 @@ define(
                 this.clearLayer.addChild(this.replayMenu, 1);
 
                 cc.eventManager.addCustomListener('table:status_clear', function (event) {
-                    this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', event.getUserData()['turns']));
+                    var turns = event.getUserData()['turns'];
+                    this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', turns));
                     this.clearLayer.setVisible(true);
                     this.pauseGame();
+                    document.title = i18n('我在《欢乐台球》用了%d回合清空桌面!').replace('%d', turns + '');
+
+                    // 百度统计
+                    if (window['_hmt']) {
+                        window['_hmt'].push(['_trackEvent', 'funnyBillards_' + (cc.sys.isMobile ? 'Mobile' : 'Desktop'), 'clear', turns + '']);
+                    }
                 }.bind(this));
             }
         });

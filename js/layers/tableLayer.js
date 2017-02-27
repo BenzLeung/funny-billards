@@ -527,6 +527,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 }
                 this.resetMasterBall();
                 this.combo = 0;
+                this.turns ++;
                 cc.eventManager.dispatchCustomEvent('table:master_goal');
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
