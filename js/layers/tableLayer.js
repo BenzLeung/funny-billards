@@ -470,7 +470,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.shoot.shooting = false;
             this.setStatus(STATUS_READY);
             this.turns = 0;
-            this.space.step(1);
             this.saveTableStateToLocalStorage();
 
             cc.eventManager.dispatchCustomEvent('table:reset');
