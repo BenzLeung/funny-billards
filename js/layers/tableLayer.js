@@ -212,18 +212,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             this.loadTableStateFromLocalStorage();
 
             this.scheduleUpdate();
-
-            // todo:临时代码（清理）
-            /*cc.eventManager.addCustomListener('table:status_clear', function (event) {
-                alert('清袋！你用了%d回合！'.replace('%d', event.getUserData()['turns']));
-                this.resetTable();
-            }.bind(this));*/
-            /*cc.eventManager.addCustomListener('table:master_goal', function () {
-                alert('进白球啦！');
-            }.bind(this));
-            cc.eventManager.addCustomListener('table:goal', function (event) {
-                alert('进了%d个球啦！'.replace('%d', event.getUserData()['goals'].length));
-            }.bind(this));*/
         },
 
         initSpace : function () {
@@ -494,7 +482,6 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             if (status === this.status) {
                 return;
             }
-            console.log('status: ' + this.status + ' -> ' + status);
             var oldStatus = this.status;
             this.status = status;
             if (status === STATUS_RUNNING) {
@@ -539,6 +526,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                     this.goalBallsNumber.pop();
                 }
                 this.resetMasterBall();
+                this.combo = 0;
                 cc.eventManager.dispatchCustomEvent('table:master_goal');
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
