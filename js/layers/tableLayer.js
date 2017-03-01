@@ -9,7 +9,13 @@
  * each engineer has a duty to keep the code elegant
  */
 
-define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc, cp, Ball, BallCursor) {
+define([
+    'cocos',
+    'chipmunk',
+    'sprites/ball',
+    'sprites/ballCursor',
+    'benzAudioEngine'
+], function (cc, cp, Ball, BallCursor, benzAudioEngine) {
     // 移动摩擦系数
     var MOVE_FRICTION = 1.0;
     // 移动摩擦系数的平方
@@ -513,7 +519,7 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
                 }
             } else if (status === STATUS_CLEAR) {
                 cc.eventManager.dispatchCustomEvent('table:status_clear', {turns: this.turns});
-                this.removeTableStateToLocalStorage();
+                this.removeTableStateFromLocalStorage();
             } else if (status === STATUS_WAIT) {
                 cc.eventManager.dispatchCustomEvent('table:status_wait');
             }
@@ -631,6 +637,9 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
         },
 
         saveTableStateToLocalStorage: function () {
+            if (this.ballCount <= 1) {
+                return;
+            }
             var jsonObject = this.getTableStateJSON();
             var jsonString = JSON.stringify(jsonObject);
             cc.sys.localStorage.setItem('tableState', jsonString);
@@ -646,13 +655,14 @@ define(['cocos', 'chipmunk', 'sprites/ball', 'sprites/ballCursor'], function (cc
             }
         },
 
-        removeTableStateToLocalStorage: function () {
+        removeTableStateFromLocalStorage: function () {
             cc.sys.localStorage.removeItem('tableState');
         },
 
         playEffect: function (res) {
             if (!this.mute) {
-                cc.audioEngine.playEffect(res);
+                //cc.audioEngine.playEffect(res);
+                benzAudioEngine.play(res);
             }
         },
 

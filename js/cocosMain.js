@@ -8,7 +8,7 @@
  * each engineer has a duty to keep the code elegant
  */
 
-require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
+require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScene, benzAudioEngine) {
 
     window.DEBUG_MODE = 1;
 
@@ -35,8 +35,12 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
             'res/btn-force-disabled.png',
 
             'res/btn-shoot.png',
-            'res/btn-shoot-disabled.png',
+            'res/btn-shoot-disabled.png'
+        ]
+    };
 
+    var SOUND = {
+        gameScene: [
             'res/goal.mp3',
             'res/hit-ball.mp3',
             'res/hit-wall.mp3',
@@ -54,7 +58,9 @@ require(['cocos', 'scenes/gameScene'], function (cc, GameScene) {
         cc.view.setOrientation(cc.ORIENTATION_PORTRAIT);
         cc.view.resizeWithBrowserSize(true);
         cc.LoaderScene.preload(RES.gameScene, function () {
-            cc.director.runScene(new GameScene());
+            benzAudioEngine.load(SOUND.gameScene, function () {
+                cc.director.runScene(new GameScene());
+            });
         }, this);
     };
 

@@ -19,9 +19,10 @@ define(
         'sprites/forceButton',
         'sprites/menuButton',
         'sprites/forceSlider',
+        'benzAudioEngine',
         'i18n/i18n'
     ],
-    function (cc, TableLayer, ZoomTableLayer, MiddleMsgLayer, ShootButton, ForceButton, MenuButton, ForceSlider, i18n) {
+    function (cc, TableLayer, ZoomTableLayer, MiddleMsgLayer, ShootButton, ForceButton, MenuButton, ForceSlider, benzAudioEngine, i18n) {
         var CONTROL_BAR_HEIGHT = 220;
         var SCORE_BAR_HEIGHT = 98;
 
@@ -225,12 +226,14 @@ define(
                     if (this.enableSound) {
                         toggleSfxMenuItem.setString(i18n('音效：关'));
                         this.enableSound = false;
-                        cc.audioEngine.setEffectsVolume(0.0);
+                        //cc.audioEngine.setEffectsVolume(0.0);
+                        benzAudioEngine.setMuted(true);
                     } else {
                         toggleSfxMenuItem.setString(i18n('音效：开'));
                         this.enableSound = true;
-                        cc.audioEngine.setEffectsVolume(1.0);
-                        cc.audioEngine.playEffect('res/hit-ball.mp3');
+                        //cc.audioEngine.setEffectsVolume(1.0);
+                        benzAudioEngine.setMuted(false);
+                        benzAudioEngine.play('res/hit-ball.mp3');
                     }
                 }.bind(this), this);
 
