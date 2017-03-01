@@ -477,6 +477,7 @@ define([
             this.setStatus(STATUS_READY);
             this.turns = 0;
             this.saveTableStateToLocalStorage();
+            this.space.step(0.01);
 
             cc.eventManager.dispatchCustomEvent('table:reset');
         },
