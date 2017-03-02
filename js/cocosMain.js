@@ -24,6 +24,7 @@ require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScen
         gameScene: [
             'res/ball.png',
             'res/masterball.png',
+            'res/ball-animate-sprite.png',
 
             'res/slider-background.png',
             'res/slider-progress.png',

@@ -13,9 +13,10 @@ define([
     'cocos',
     'chipmunk',
     'sprites/ball',
+    'sprites/ballAnimate',
     'sprites/ballCursor',
     'benzAudioEngine'
-], function (cc, cp, Ball, BallCursor, benzAudioEngine) {
+], function (cc, cp, Ball, BallAnimate, BallCursor, benzAudioEngine) {
     // 移动摩擦系数
     var MOVE_FRICTION = 1.0;
     // 移动摩擦系数的平方
@@ -205,7 +206,7 @@ define([
             this.initSpace();
 
             for (var i = 0; i < 10; i ++) {
-                var ball = this.addBall();
+                var ball = this.addBallAnimate(i);
                 ball.body.number = i;
                 this.balls.push(ball);
             }
@@ -376,6 +377,10 @@ define([
         addBall: function (pngName) {
             pngName = pngName || 'res/ball.png';
             return new Ball(pngName);
+        },
+
+        addBallAnimate: function (ballId) {
+            return new BallAnimate(ballId);
         },
 
         removeBall: function (ballSprite) {
