@@ -457,7 +457,7 @@ define([
             if (cc.rectContainsPoint(theRect, pos)) {
                 this.ballCursor.setPosition(pos);
                 this.ballLine.clear();
-                this.ballLine.drawSegment(this.masterBall.getPosition(), pos, 1, cc.color(128, 128, 128));
+                this.ballLine.drawSegment(this.masterBall.getPosition(), pos, 1, cc.color(255, 255, 255));
                 if (!this.ballCursor.isVisible()) {
                     this.showAimLine();
                 }
