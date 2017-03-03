@@ -22,9 +22,9 @@ require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScen
 
     var RES = {
         gameScene: [
-            'res/ball.png',
             'res/masterball.png',
             'res/ball-animate-sprite.png',
+            'res/table.png',
 
             'res/slider-background.png',
             'res/slider-progress.png',

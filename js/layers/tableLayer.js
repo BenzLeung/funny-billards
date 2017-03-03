@@ -31,6 +31,15 @@ define([
     var TABLE_WIDTH = 1402;
     var TABLE_HEIGHT = 777;
 
+    // 桌子池的显示位置
+    var TABLE_BG_X = 31;
+    var TABLE_BG_Y = 12;
+    // 桌子池的尺寸
+    var TABLE_BG_WIDTH = TABLE_WIDTH - TABLE_BG_X * 2;
+    var TABLE_BG_HEIGHT = TABLE_HEIGHT - TABLE_BG_Y * 2;
+    // 桌子池的默认颜色
+    var TABLE_BG_DEFAULT_COLOR = cc.color(51, 153, 0);
+
     // 墙壁位置（多边形版）
     var WALL_POLYGONS = [
         // 下左边
@@ -138,6 +147,13 @@ define([
                 v[0] = v[1];
                 v[1] = 0 - t;
             }
+
+            t = TABLE_BG_X;
+            TABLE_BG_X = TABLE_BG_Y;
+            TABLE_BG_Y = t;
+            t = TABLE_BG_WIDTH;
+            TABLE_BG_WIDTH = TABLE_BG_HEIGHT;
+            TABLE_BG_HEIGHT = t;
         })();
     }
 
@@ -275,8 +291,21 @@ define([
             }
 
             // 调试显示
-            this._debugNode = new cc.PhysicsDebugNode(this.space);
-            this.addChild(this._debugNode, 1);
+            /*this._debugNode = new cc.PhysicsDebugNode(this.space);
+            this.addChild(this._debugNode, 2);*/
+
+            // 桌子池（纯色）
+            this.tableBg = new cc.LayerColor(TABLE_BG_DEFAULT_COLOR, TABLE_BG_WIDTH, TABLE_BG_HEIGHT);
+            this.tableBg.setPosition(TABLE_BG_X, TABLE_BG_Y);
+            this.addChild(this.tableBg, 0);
+
+            // 桌子边框
+            this.tableBorder = new cc.Sprite('res/table.png');
+            if (cc.sys.isMobile) {
+                this.tableBorder.setRotation(-90);
+            }
+            this.tableBorder.setPosition(TABLE_WIDTH / 2, TABLE_HEIGHT / 2);
+            this.addChild(this.tableBorder, 1);
         },
 
         desktopPreSolve: function (arbiter, space) {
@@ -672,6 +701,14 @@ define([
                 //cc.audioEngine.playEffect(res);
                 benzAudioEngine.play(res);
             }
+        },
+
+        setTableColor: function (color) {
+            this.tableBg.setColor(color);
+        },
+
+        resetTableColor: function () {
+            this.tableBg.setColor(TABLE_BG_DEFAULT_COLOR);
         },
 
         update: function (dt) {

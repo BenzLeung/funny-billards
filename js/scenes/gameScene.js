@@ -327,9 +327,25 @@ define(
                 cc.eventManager.addCustomListener('table:status_clear', function (event) {
                     var turns = event.getUserData()['turns'];
                     this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', turns));
-                    this.clearLayer.setVisible(true);
                     this.pauseGame();
                     document.title = i18n('我在《欢乐台球》用了%d回合清空桌面!').replace('%d', turns + '');
+                    this.runAction(cc.sequence([
+                        cc.repeat(cc.sequence([
+                            cc.callFunc(function () {
+                                this.tableLayer.setTableColor(cc.color(255, 255, 255));
+                            }, this),
+                            cc.delayTime(0.05),
+                            cc.callFunc(function () {
+                                this.tableLayer.resetTableColor();
+                            }, this),
+                            cc.delayTime(0.05)
+                        ]), 5),
+                        cc.delayTime(0.5),
+                        cc.callFunc(function () {
+                            this.clearLayer.setVisible(true);
+                        }, this)
+                    ]));
+
 
                     // 百度统计
                     if (window['_hmt']) {
