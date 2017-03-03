@@ -74,6 +74,12 @@ define(['cocos', 'sprites/ball'], function (cc, Ball) {
             this.scheduleUpdate();
         },
 
+        onExit: function () {
+            this.unscheduleUpdate();
+            this._super();
+        },
+
+
         nextFrame: function () {
             this.curFrame ++;
             if (this.curFrame >= BALL_FRAME_NUM) {

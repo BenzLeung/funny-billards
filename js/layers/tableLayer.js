@@ -371,6 +371,8 @@ define([
         onExit: function() {
             this.space.removeCollisionHandler(1, 0);
             this.space.removeCollisionHandler(2, 0);
+            this.space.removeCollisionHandler(3, 0);
+            this.space.removeCollisionHandler(0, 0);
             this._super();
         },
 
