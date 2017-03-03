@@ -63,7 +63,7 @@ define(['cocos', 'sprites/ball'], function (cc, Ball) {
             if (!ballFrameImage) {
                 initFrame();
             }
-            //this.ballId = ballId;
+            this.ballId = ballId;
             this.frames = frames[ballId] || frames[0];
             this._super(this.frames[this.curFrame]);
             this.setIgnoreBodyRotation(true);
