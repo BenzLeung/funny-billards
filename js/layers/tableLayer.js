@@ -513,7 +513,6 @@ define([
             this.setStatus(STATUS_READY);
             this.turns = 0;
             this.saveTableStateToLocalStorage();
-            this.space.step(0.01);
 
             cc.eventManager.dispatchCustomEvent('table:reset');
         },
@@ -528,9 +527,6 @@ define([
             } else {
                 // “与非”运算，把对应的位，置为0 （先非后与）
                 this.runningBit = this.runningBit & (~ballBit);
-                if (!this.runningBit) {
-                    this.setStatus(STATUS_READY);
-                }
             }
         },
 
@@ -721,7 +717,12 @@ define([
                 }
                 for (var i = 0; i < l; i ++) {
                     this.space.step(1 / 60);
+                    if (!this.runningBit) {
+                        this.setStatus(STATUS_READY);
+                    }
                 }
+            } else {
+                this.space.step(1 / 60);
             }
         }
     });
