@@ -226,14 +226,27 @@ define(
                     if (this.enableSound) {
                         toggleSfxMenuItem.setString(i18n('音效：关'));
                         this.enableSound = false;
-                        //cc.audioEngine.setEffectsVolume(0.0);
-                        benzAudioEngine.setMuted(true);
+                        this.tableLayer.mute = true;
                     } else {
                         toggleSfxMenuItem.setString(i18n('音效：开'));
                         this.enableSound = true;
-                        //cc.audioEngine.setEffectsVolume(1.0);
-                        benzAudioEngine.setMuted(false);
+                        this.tableLayer.mute = false;
                         benzAudioEngine.play('res/hit-ball.mp3');
+                    }
+                }.bind(this), this);
+
+                this.enableMusic = false;
+                var toggleMusicLabel = new cc.LabelTTF(i18n('背景音乐：关'), i18n.defaultFont, MENU_FONT_SIZE);
+                toggleMusicLabel.setColor(MENU_COLOR);
+                var toggleMusicMenuItem = new cc.MenuItemLabel(toggleMusicLabel, function () {
+                    if (this.enableMusic) {
+                        toggleMusicMenuItem.setString(i18n('背景音乐：关'));
+                        this.enableMusic = false;
+                        this.stopBgm();
+                    } else {
+                        toggleMusicMenuItem.setString(i18n('背景音乐：开'));
+                        this.enableMusic = true;
+                        this.playBgm();
                     }
                 }.bind(this), this);
 
@@ -244,7 +257,7 @@ define(
                 this.pauseMenuLayer = new cc.LayerColor(cc.color(0, 0, 0, 128));
                 this.pauseMenuLayer.setContentSize(this.fixedLayer.getContentSize());
                 this.pauseMenuLayer.setVisible(false);
-                this.pauseMenu = new cc.Menu(resumeMenuItem, toggleSfxMenuItem, restartGameMenuItem);
+                this.pauseMenu = new cc.Menu(resumeMenuItem, toggleSfxMenuItem, toggleMusicMenuItem, restartGameMenuItem);
                 this.pauseMenu.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2);
                 this.pauseMenu.alignItemsVerticallyWithPadding(30);
                 this.pauseMenuLayer.addChild(this.pauseMenu);
@@ -288,6 +301,25 @@ define(
                 this.tableLayer.resetTable();
             },
 
+            playBgm: function () {
+                if (this.enableMusic) {
+                    this.bgmId = benzAudioEngine.play('res/bgm.mp3', 0.550, 31.251);
+                }
+            },
+
+            stopBgm: function () {
+                if (this.bgmId !== undefined) {
+                    benzAudioEngine.stop(this.bgmId);
+                }
+            },
+
+            playClearBgm: function () {
+                if (this.enableMusic) {
+                    this.stopBgm();
+                    benzAudioEngine.play('res/clear.mp3');
+                }
+            },
+
             initTableClear: function () {
                 var v = cc.visibleRect;
 
@@ -312,6 +344,7 @@ define(
                     this.resumeGame();
                     this.tableLayer.resetTable();
                     this.clearLayer.setVisible(false);
+                    this.playBgm();
                 }, this);
                 /*var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
                 exitLabel.setColor(new cc.Color(0, 255, 0));
@@ -329,6 +362,7 @@ define(
                     this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', turns));
                     this.pauseGame();
                     document.title = i18n('我在《欢乐台球》用了%d回合清空桌面!').replace('%d', turns + '');
+                    this.playClearBgm();
                     this.runAction(cc.sequence([
                         cc.repeat(cc.sequence([
                             cc.callFunc(function () {

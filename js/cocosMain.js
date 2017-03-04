@@ -46,7 +46,9 @@ require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScen
             'res/hit-ball.mp3',
             'res/hit-wall.mp3',
             'res/lost-master.mp3',
-            'res/shoot.mp3'
+            'res/shoot.mp3',
+            'res/bgm.mp3',
+            'res/clear.mp3'
         ]
     };
 

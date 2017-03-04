@@ -123,7 +123,7 @@ define([], function () {
                 if (loopEnd) {
                     s['loop'] = true;
                     s['loopStart'] = loopStart;
-                    s['loopEnd '] = loopEnd;
+                    s['loopEnd'] = loopEnd;
                 }
                 return s;
             };
