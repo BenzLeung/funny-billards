@@ -33,7 +33,7 @@ define(
                 var menu = new StartMenu();
                 this.fixedLayer.addChild(menu, 5);
 
-                var benzLeung = new cc.LabelTTF('©Benz Leung (https://github.com/BenzLeung)', 'Tahoma', 30);
+                var benzLeung = new cc.LabelTTF('©Benz Leung (https://github.com/BenzLeung)', 'Tahoma', 45);
                 benzLeung.setColor(new cc.Color(128, 128, 128, 1));
                 benzLeung.setPosition(cc.visibleRect.width / 2, 60);
                 this.fixedLayer.addChild(benzLeung, 3);
