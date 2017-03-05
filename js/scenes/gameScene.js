@@ -98,6 +98,9 @@ define(
                     this.tableLayer.setAimLine(this.tableLayer.ballCursor.getPosition());
                     this.forceSlider.setValue(100);
                 }.bind(this));
+
+                // 添加控制提示
+                this.initTouchTips();
             },
 
             initScoreBar: function () {
@@ -386,6 +389,59 @@ define(
                         window['_hmt'].push(['_trackEvent', 'funnyBillards_' + (cc.sys.isMobile ? 'Mobile' : 'Desktop'), 'clear', turns + '']);
                     }
                 }.bind(this));
+            },
+
+            initTouchTips: function () {
+                var tipsLayer = new cc.LayerColor(cc.color(0, 0, 0, 192), cc.visibleRect.width, cc.visibleRect.height);
+                var fingerImage = cc.textureCache.addImage('res/fingers.png');
+
+                var singleFinger = new cc.SpriteFrame(
+                    fingerImage,
+                    cc.rect(0, 0, fingerImage.pixelsWidth / 2, fingerImage.pixelsHeight)
+                );
+                singleFinger = new cc.Sprite(singleFinger);
+                singleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 150 + 150);
+
+                var doubleFinger = new cc.SpriteFrame(
+                    fingerImage,
+                    cc.rect(fingerImage.pixelsWidth / 2, 0, fingerImage.pixelsWidth / 2, fingerImage.pixelsHeight)
+                );
+                doubleFinger = new cc.Sprite(doubleFinger);
+                doubleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 150);
+
+                var singleFingerLabel = new cc.LabelTTF(i18n('单指移动光标'), i18n.defaultFont, 50);
+                singleFingerLabel.setColor(cc.color(255, 255, 255));
+                singleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 150);
+
+                var doubleFingerLabel = new cc.LabelTTF(i18n('双指缩放桌子'), i18n.defaultFont, 50);
+                doubleFingerLabel.setColor(cc.color(255, 255, 255));
+                doubleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 150 - 150);
+
+                tipsLayer.addChild(singleFinger);
+                tipsLayer.addChild(singleFingerLabel);
+                tipsLayer.addChild(doubleFinger);
+                tipsLayer.addChild(doubleFingerLabel);
+
+                this.fixedLayer.addChild(tipsLayer, 20);
+                this.pauseGame();
+
+                var touchListener = cc.EventListener.create({
+                    event: cc.EventListener.TOUCH_ALL_AT_ONCE,
+                    onTouchesBegan: function (touches, event) {
+                        var target = event.getCurrentTarget();
+                        target.resumeGame();
+                        hideTips();
+                        return true;
+                    }
+                });
+
+                var hideTips = function () {
+                    tipsLayer.removeAllChildren(true);
+                    tipsLayer.removeFromParent(true);
+                    cc.eventManager.removeListener(touchListener);
+                };
+
+                cc.eventManager.addListener(touchListener, this);
             }
         });
 });
