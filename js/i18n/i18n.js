@@ -35,6 +35,9 @@ define(['cocos', 'i18n/localeList'], function (cc, localeList) {
             localeContent = locale;
             curDictionary = locale['dictionary'];
             i18n['defaultFont'] = locale['defaultFont'];
+            if (locale['defaultFontMobile'] && cc.sys.isMobile) {
+                i18n['defaultFont'] = locale['defaultFontMobile'];
+            }
             if (typeof callback === 'function') {
                 callback();
             }

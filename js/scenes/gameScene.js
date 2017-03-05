@@ -63,6 +63,18 @@ define(
                 this.initTableClear();
             },
 
+            onEnter: function () {
+                this._super();
+                if (this.enableMusic) {
+                    this.playBgm();
+                }
+            },
+
+            onExit: function () {
+                this.stopBgm();
+                this._super();
+            },
+
             initMouse: function () {
                 var mouseListener = cc.EventListener.create({
                     event: cc.EventListener.MOUSE,
@@ -222,45 +234,66 @@ define(
                 resumeLabel.setColor(MENU_COLOR);
                 var resumeMenuItem = new cc.MenuItemLabel(resumeLabel, this.hideMenu.bind(this), this);
 
-                this.enableSound = true;
-                var toggleSfxLabel = new cc.LabelTTF(i18n('音效：开'), i18n.defaultFont, MENU_FONT_SIZE);
+                var restartGameLabel = new cc.LabelTTF(i18n('重新开始'), i18n.defaultFont, MENU_FONT_SIZE);
+                restartGameLabel.setColor(MENU_COLOR);
+                var restartGameMenuItem = new cc.MenuItemLabel(restartGameLabel, this.restartGame.bind(this), this);
+
+                this.enableSound = !!parseInt(cc.sys.localStorage.getItem('enableSfx'), 10);
+                var toggleSfxLabel = new cc.LabelTTF(i18n(this.enableSound ? '音效：开' : '音效：关'), i18n.defaultFont, MENU_FONT_SIZE);
                 toggleSfxLabel.setColor(MENU_COLOR);
                 var toggleSfxMenuItem = new cc.MenuItemLabel(toggleSfxLabel, function () {
                     if (this.enableSound) {
                         toggleSfxMenuItem.setString(i18n('音效：关'));
                         this.enableSound = false;
                         this.tableLayer.mute = true;
+                        cc.sys.localStorage.setItem('enableSfx', 0);
                     } else {
                         toggleSfxMenuItem.setString(i18n('音效：开'));
                         this.enableSound = true;
                         this.tableLayer.mute = false;
+                        cc.sys.localStorage.setItem('enableSfx', 1);
                         benzAudioEngine.play('res/hit-ball.mp3');
                     }
                 }.bind(this), this);
+                this.tableLayer.mute = !this.enableSound;
 
-                this.enableMusic = false;
-                var toggleMusicLabel = new cc.LabelTTF(i18n('背景音乐：关'), i18n.defaultFont, MENU_FONT_SIZE);
+                this.enableMusic = !!parseInt(cc.sys.localStorage.getItem('enableBgm'), 10);
+                var toggleMusicLabel = new cc.LabelTTF(i18n(this.enableMusic ? '背景音乐：开' : '背景音乐：关'), i18n.defaultFont, MENU_FONT_SIZE);
                 toggleMusicLabel.setColor(MENU_COLOR);
                 var toggleMusicMenuItem = new cc.MenuItemLabel(toggleMusicLabel, function () {
                     if (this.enableMusic) {
                         toggleMusicMenuItem.setString(i18n('背景音乐：关'));
                         this.enableMusic = false;
+                        cc.sys.localStorage.setItem('enableBgm', 0);
                         this.stopBgm();
                     } else {
                         toggleMusicMenuItem.setString(i18n('背景音乐：开'));
                         this.enableMusic = true;
+                        cc.sys.localStorage.setItem('enableBgm', 1);
                         this.playBgm();
                     }
                 }.bind(this), this);
 
-                var restartGameLabel = new cc.LabelTTF(i18n('重新开始'), i18n.defaultFont, MENU_FONT_SIZE);
-                restartGameLabel.setColor(MENU_COLOR);
-                var restartGameMenuItem = new cc.MenuItemLabel(restartGameLabel, this.restartGame.bind(this), this);
+                var controlTipsLabel = new cc.LabelTTF(i18n('操作说明'), i18n.defaultFont, MENU_FONT_SIZE);
+                controlTipsLabel.setColor(MENU_COLOR);
+                var controlTipsMenuItem = new cc.MenuItemLabel(controlTipsLabel, function () {
+                    this.hideMenu();
+                    this.showControlTips();
+                }.bind(this), this);
+
+                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
+                exitLabel.setColor(new cc.Color(0, 255, 0));
+                exitLabel.enableStroke(new cc.Color(10, 10, 10), 2);
+                var exitItem = new  cc.MenuItemLabel(exitLabel, this.exitGame.bind(this), this);
 
                 this.pauseMenuLayer = new cc.LayerColor(cc.color(0, 0, 0, 128));
                 this.pauseMenuLayer.setContentSize(this.fixedLayer.getContentSize());
                 this.pauseMenuLayer.setVisible(false);
-                this.pauseMenu = new cc.Menu(resumeMenuItem, toggleSfxMenuItem, toggleMusicMenuItem, restartGameMenuItem);
+                if (benzAudioEngine.support()) {
+                    this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem, toggleSfxMenuItem, toggleMusicMenuItem, controlTipsMenuItem, exitItem);
+                } else {
+                    this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem, controlTipsMenuItem, exitItem);
+                }
                 this.pauseMenu.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2);
                 this.pauseMenu.alignItemsVerticallyWithPadding(30);
                 this.pauseMenuLayer.addChild(this.pauseMenu);
@@ -340,6 +373,11 @@ define(
                 this.finalScoreLabel.setColor(new cc.Color(255, 255, 255));
                 this.clearLayer.addChild(this.finalScoreLabel, 1);
 
+                this.maxComboLabel = new cc.LabelTTF(i18n('最大连击数：%d').replace('%d', this.tableLayer.maxCombo), i18n.defaultFont, 72);
+                this.maxComboLabel.setPosition(v.width / 2, v.height / 2);
+                this.maxComboLabel.setColor(new cc.Color(255, 255, 0));
+                this.clearLayer.addChild(this.maxComboLabel, 1);
+
                 var replayLabel = new cc.LabelTTF(i18n('再来一局'), i18n.defaultFont, 72);
                 replayLabel.setColor(new cc.Color(0, 255, 0));
                 replayLabel.enableStroke(new cc.Color(10, 10, 10), 2);
@@ -349,20 +387,25 @@ define(
                     this.clearLayer.setVisible(false);
                     this.playBgm();
                 }, this);
-                /*var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
+                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
                 exitLabel.setColor(new cc.Color(0, 255, 0));
                 exitLabel.enableStroke(new cc.Color(10, 10, 10), 2);
-                var exitItem = new  cc.MenuItemLabel(exitLabel, function () {
-                    // todo
-                }, this);*/
-                this.replayMenu = new cc.Menu(replayItem/*, exitItem*/);
-                this.replayMenu.setPosition(v.width / 2, v.height * 0.4);
+                var exitItem = new  cc.MenuItemLabel(exitLabel, this.exitGame.bind(this), this);
+                this.replayMenu = new cc.Menu(replayItem, exitItem);
+                this.replayMenu.setPosition(v.width / 2, v.height * 0.3);
                 this.replayMenu.alignItemsVerticallyWithPadding(30);
-                this.clearLayer.addChild(this.replayMenu, 1);
+                this.clearLayer.addChild(this.replayMenu, 2);
+
+                var qrcode = new cc.Sprite('res/qrcode.png');
+                qrcode.setPosition(v.width / 2, 125);
+                this.clearLayer.addChild(qrcode, 1);
 
                 cc.eventManager.addCustomListener('table:status_clear', function (event) {
-                    var turns = event.getUserData()['turns'];
+                    var data = event.getUserData();
+                    var turns = data['turns'];
+                    var maxCombo = data['maxCombo'];
                     this.finalScoreLabel.setString(i18n('你用了 %d 回合').replace('%d', turns));
+                    this.maxComboLabel.setString(i18n('最大连击数：%d').replace('%d', maxCombo));
                     this.pauseGame();
                     document.title = i18n('我在《欢乐台球》用了%d回合清空桌面!').replace('%d', turns + '');
                     this.playClearBgm();
@@ -392,37 +435,61 @@ define(
             },
 
             initTouchTips: function () {
-                var tipsLayer = new cc.LayerColor(cc.color(0, 0, 0, 192), cc.visibleRect.width, cc.visibleRect.height);
+                this.tipsLayer = new cc.LayerColor(cc.color(0, 0, 0, 192), cc.visibleRect.width, cc.visibleRect.height);
                 var fingerImage = cc.textureCache.addImage('res/fingers.png');
 
                 var singleFinger = new cc.SpriteFrame(
                     fingerImage,
-                    cc.rect(0, 0, fingerImage.pixelsWidth / 2, fingerImage.pixelsHeight)
+                    cc.rect(0, 0, fingerImage.pixelsWidth / 3, fingerImage.pixelsHeight)
                 );
                 singleFinger = new cc.Sprite(singleFinger);
-                singleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 150 + 150);
+                singleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 450);
 
                 var doubleFinger = new cc.SpriteFrame(
                     fingerImage,
-                    cc.rect(fingerImage.pixelsWidth / 2, 0, fingerImage.pixelsWidth / 2, fingerImage.pixelsHeight)
+                    cc.rect(fingerImage.pixelsWidth / 3, 0, fingerImage.pixelsWidth / 3, fingerImage.pixelsHeight)
                 );
                 doubleFinger = new cc.Sprite(doubleFinger);
-                doubleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 150);
+                doubleFinger.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 100);
+
+                var autoSave = new cc.SpriteFrame(
+                    fingerImage,
+                    cc.rect(fingerImage.pixelsWidth / 3 * 2, 0, fingerImage.pixelsWidth / 3, fingerImage.pixelsHeight)
+                );
+                autoSave = new cc.Sprite(autoSave);
+                autoSave.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 250);
 
                 var singleFingerLabel = new cc.LabelTTF(i18n('单指移动光标'), i18n.defaultFont, 50);
                 singleFingerLabel.setColor(cc.color(255, 255, 255));
-                singleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 150);
+                singleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 + 300);
 
                 var doubleFingerLabel = new cc.LabelTTF(i18n('双指缩放桌子'), i18n.defaultFont, 50);
                 doubleFingerLabel.setColor(cc.color(255, 255, 255));
-                doubleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 150 - 150);
+                doubleFingerLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 50);
 
-                tipsLayer.addChild(singleFinger);
-                tipsLayer.addChild(singleFingerLabel);
-                tipsLayer.addChild(doubleFinger);
-                tipsLayer.addChild(doubleFingerLabel);
+                var autoSaveLabel = new cc.LabelTTF(i18n('自动保存进度，可随时离开游戏'), i18n.defaultFont, 50,
+                    cc.size(cc.visibleRect.width - 100, 0), cc.TEXT_ALIGNMENT_CENTER);
+                autoSaveLabel.setColor(cc.color(255, 255, 255));
+                autoSaveLabel.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2 - 400);
 
-                this.fixedLayer.addChild(tipsLayer, 20);
+                this.tipsLayer.addChild(singleFinger);
+                this.tipsLayer.addChild(singleFingerLabel);
+                this.tipsLayer.addChild(doubleFinger);
+                this.tipsLayer.addChild(doubleFingerLabel);
+                this.tipsLayer.addChild(autoSave);
+                this.tipsLayer.addChild(autoSaveLabel);
+
+                this.tipsLayer.setVisible(false);
+                this.fixedLayer.addChild(this.tipsLayer, 20);
+
+                if (!cc.sys.localStorage.getItem('firstControlTips')) {
+                    this.showControlTips();
+                    cc.sys.localStorage.setItem('firstControlTips', 1);
+                }
+            },
+
+            showControlTips: function () {
+                this.tipsLayer.setVisible(true);
                 this.pauseGame();
 
                 var touchListener = cc.EventListener.create({
@@ -430,18 +497,22 @@ define(
                     onTouchesBegan: function (touches, event) {
                         var target = event.getCurrentTarget();
                         target.resumeGame();
-                        hideTips();
+                        target.tipsLayer.setVisible(false);
+                        cc.eventManager.removeListener(touchListener);
                         return true;
                     }
                 });
 
-                var hideTips = function () {
-                    tipsLayer.removeAllChildren(true);
-                    tipsLayer.removeFromParent(true);
-                    cc.eventManager.removeListener(touchListener);
-                };
-
                 cc.eventManager.addListener(touchListener, this);
+            },
+
+            exitGame:function () {
+                if (this.enableSound) {
+                    benzAudioEngine.play('res/lost-master.mp3');
+                }
+                require(['scenes/titleScene'], function (TitleScene) {
+                    cc.director.runScene(new cc.TransitionFade(0.5, new TitleScene()));
+                });
             }
         });
 });

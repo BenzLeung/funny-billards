@@ -23,7 +23,7 @@ define(['cocos', 'i18n/i18n'], function (cc, i18n) {
         initGoalMsg: function () {
             var v = cc.visibleRect;
 
-            this.goalLabel = new cc.LabelTTF(i18n('Goal'), i18n.defaultFont, 96);
+            this.goalLabel = new cc.LabelTTF(i18n('进球'), i18n.defaultFont, 96);
             this.goalLabel.setColor(cc.color(255, 255, 255));
             this.goalNumberLabel = new cc.LabelTTF('x2', i18n.defaultFont, 96);
             this.goalNumberLabel.setColor(cc.color(0, 255, 0));
@@ -56,7 +56,7 @@ define(['cocos', 'i18n/i18n'], function (cc, i18n) {
         initComboMsg: function () {
             var v = cc.visibleRect;
 
-            this.comboLabel = new cc.LabelTTF(i18n('Combo'), i18n.defaultFont, 96);
+            this.comboLabel = new cc.LabelTTF(i18n('连击'), i18n.defaultFont, 96);
             this.comboLabel.setColor(cc.color(255, 255, 255));
             this.comboNumberLabel = new cc.LabelTTF('3', i18n.defaultFont, 112);
             this.comboNumberLabel.setColor(cc.color(255, 255, 0));

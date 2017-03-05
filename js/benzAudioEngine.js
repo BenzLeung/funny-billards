@@ -152,6 +152,9 @@ define([], function () {
             };
         };
         return {
+            support: function () {
+                return true;
+            },
             load: function (srcArray, callback) {
                 if (!(srcArray instanceof Array)) {
                     srcArray = [srcArray];
@@ -212,6 +215,9 @@ define([], function () {
                     volumeNode['gain'].value = volumeBeforeMuted;
                 }
             },
+            getMuted: function () {
+                return isMuted;
+            },
             pauseAll: function () {
                 for (var i in audioList) {
                     if (audioList.hasOwnProperty(i)) {
@@ -234,6 +240,9 @@ define([], function () {
     } else {
         var emptyFunc = function () {};
         return {
+            support: function () {
+                return false;
+            },
             load: emptyFunc,
             unload: emptyFunc,
             play: emptyFunc,
@@ -241,6 +250,9 @@ define([], function () {
             stop: emptyFunc,
             setVolume: emptyFunc,
             setMuted: emptyFunc,
+            getMuted: function () {
+                return true;
+            },
             pauseAll: emptyFunc,
             stopAll: emptyFunc
         }

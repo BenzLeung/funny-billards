@@ -210,6 +210,9 @@ define([
         // 记录连击数
         combo: 0,
 
+        // 记录最大连击数
+        maxCombo: 0,
+
         // 是否静音（不是用来给用户控制静音的，而是因为复位球的时候会产生碰撞……）
         mute: false,
 
@@ -221,6 +224,7 @@ define([
             this.space = new cp.Space();
             this.initSpace();
 
+            this.balls = [];
             for (var i = 0; i < 10; i ++) {
                 var ball = this.addBallAnimate(i);
                 ball.body.number = i;
@@ -405,6 +409,16 @@ define([
             this._super();
         },
 
+        pause: function () {
+            this.pauseBallAnimate();
+            this._super();
+        },
+
+        resume: function () {
+            this._super();
+            this.resumeBallAnimate();
+        },
+
         addBall: function (pngName) {
             pngName = pngName || 'res/ball.png';
             return new Ball(pngName);
@@ -412,6 +426,18 @@ define([
 
         addBallAnimate: function (ballId) {
             return new BallAnimate(ballId);
+        },
+
+        pauseBallAnimate: function () {
+            for (var i = 0, len = this.balls.length; i < len; i ++) {
+                this.balls[i].pause();
+            }
+        },
+
+        resumeBallAnimate: function () {
+            for (var i = 0, len = this.balls.length; i < len; i ++) {
+                this.balls[i].resume();
+            }
         },
 
         removeBall: function (ballSprite) {
@@ -509,6 +535,7 @@ define([
             this.isMasterGoal = false;
             this.goalBallsNumberOneTurn = [];
             this.combo = 0;
+            this.maxCombo = 0;
             this.shoot.shooting = false;
             this.setStatus(STATUS_READY);
             this.turns = 0;
@@ -542,16 +569,23 @@ define([
                 if (this.space.locked) {
                     this.space.addPostStepCallback(function () {
                         this.checkOneTurn();
-                        cc.eventManager.dispatchCustomEvent('table:status_ready');
-                        this.saveTableStateToLocalStorage();
+                        if (this.ballCount !== 1) {
+                            cc.eventManager.dispatchCustomEvent('table:status_ready');
+                            this.saveTableStateToLocalStorage();
+                        }
                     }.bind(this));
                 } else {
                     this.checkOneTurn();
-                    cc.eventManager.dispatchCustomEvent('table:status_ready');
-                    this.saveTableStateToLocalStorage();
+                    if (this.ballCount !== 1) {
+                        cc.eventManager.dispatchCustomEvent('table:status_ready');
+                        this.saveTableStateToLocalStorage();
+                    }
                 }
             } else if (status === STATUS_CLEAR) {
-                cc.eventManager.dispatchCustomEvent('table:status_clear', {turns: this.turns});
+                cc.eventManager.dispatchCustomEvent('table:status_clear', {
+                    turns: this.turns,
+                    maxCombo: this.maxCombo
+                });
                 this.removeTableStateFromLocalStorage();
             } else if (status === STATUS_WAIT) {
                 cc.eventManager.dispatchCustomEvent('table:status_wait');
@@ -584,6 +618,7 @@ define([
             } else {
                 if (this.goalBallsNumberOneTurn.length > 0) {
                     this.combo ++;
+                    this.maxCombo = Math.max(this.combo, this.maxCombo);
                     cc.eventManager.dispatchCustomEvent('table:goal', {
                         goals: this.goalBallsNumberOneTurn,
                         turns: this.turns,
@@ -624,6 +659,7 @@ define([
                 'balls' : [],
                 'turns' : this.turns,
                 'combo' : this.combo,
+                'maxCombo' : this.maxCombo,
                 'goalBallsNumber' : this.goalBallsNumber.slice(0)
             };
             var i, len;
@@ -658,10 +694,12 @@ define([
             }
             this.turns = jsonObject.turns;
             this.combo = jsonObject.combo;
+            this.maxCombo = jsonObject.maxCombo;
             this.goalBallsNumber = jsonObject.goalBallsNumber;
             this.setStatus(STATUS_READY);
             this.turns = jsonObject.turns;
             this.combo = jsonObject.combo;
+            this.maxCombo = jsonObject.maxCombo;
             this.goalBallsNumber = jsonObject.goalBallsNumber;
             if (jsonObject.masterBall.shooting) {
                 pos = cc.p(jsonObject.masterBall.cursor.x, jsonObject.masterBall.cursor.y);
@@ -670,7 +708,7 @@ define([
         },
 
         saveTableStateToLocalStorage: function () {
-            if (this.ballCount <= 1) {
+            if (this.ballCount <= 1 || this.turns < 2) {
                 return;
             }
             var jsonObject = this.getTableStateJSON();
@@ -694,7 +732,6 @@ define([
 
         playEffect: function (res) {
             if (!this.mute) {
-                //cc.audioEngine.playEffect(res);
                 benzAudioEngine.play(res);
             }
         },

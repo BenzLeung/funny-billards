@@ -8,7 +8,7 @@
  * each engineer has a duty to keep the code elegant
  */
 
-require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScene, benzAudioEngine) {
+require(['cocos', 'scenes/titleScene', 'benzAudioEngine'], function (cc, TitleScene, benzAudioEngine) {
 
     window.DEBUG_MODE = 1;
 
@@ -21,38 +21,17 @@ require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScen
     };
 
     var RES = {
-        gameScene: [
-            'res/masterball.png',
-            'res/ball-animate-sprite.png',
-            'res/table.png',
-            'res/fingers.png',
-
-            'res/slider-background.png',
-            'res/slider-progress.png',
-            'res/slider-thumb.png',
-
-            'res/btn-menu.png',
-
-            'res/btn-force.png',
-            'res/btn-force-disabled.png',
-
-            'res/btn-shoot.png',
-            'res/btn-shoot-disabled.png'
+        titleScene: [
+            'res/title.png',
         ]
     };
 
     var SOUND = {
-        gameScene: [
-            'res/goal.mp3',
-            'res/hit-ball.mp3',
-            'res/hit-wall.mp3',
-            'res/lost-master.mp3',
-            'res/shoot.mp3',
-            'res/bgm.mp3',
-            'res/clear.mp3'
+        titleScene: [
+            'res/selected.mp3',
+            'res/hit-ball.mp3'
         ]
     };
-
     cc.game.onStart = function(){
         if (cc.sys.isMobile) {
             cc.view.setDesignResolutionSize(1080, 1920, cc.ResolutionPolicy.NO_BORDER);
@@ -61,9 +40,9 @@ require(['cocos', 'scenes/gameScene', 'benzAudioEngine'], function (cc, GameScen
         }
         cc.view.setOrientation(cc.ORIENTATION_PORTRAIT);
         cc.view.resizeWithBrowserSize(true);
-        cc.LoaderScene.preload(RES.gameScene, function () {
-            benzAudioEngine.load(SOUND.gameScene, function () {
-                cc.director.runScene(new GameScene());
+        cc.LoaderScene.preload(RES.titleScene, function () {
+            benzAudioEngine.load(SOUND.titleScene, function () {
+                cc.director.runScene(new TitleScene());
             });
         }, this);
     };
