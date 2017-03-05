@@ -18,22 +18,26 @@ define(
             ctor:function () {
                 this._super();
 
-                var bg = new cc.LayerColor(cc.color.BLACK);
-                this.addChild(bg, 1);
+                this.fixedLayer = new cc.LayerColor(cc.color(0, 0, 0));
+                if (cc.sys.isMobile && cc._renderType === cc.game.RENDER_TYPE_CANVAS) {
+                    this.fixedLayer.setPosition(cc.visibleRect.bottomLeft);
+                    this.fixedLayer.setContentSize(cc.visibleRect.width, cc.visibleRect.height);
+                }
+                this.addChild(this.fixedLayer);
 
-                var winSize = cc.director.getWinSize();
+                var v = cc.visibleRect;
 
                 var about = new cc.LabelTTF(
                     i18n('这是一个普通的台球游戏，我开发这个游戏的目的是学习 cocos2d-js 游戏开发，以及 chipmunk 物理引擎。' +
                         '同时实践 Web Audio API。\n\n因为我觉得 cocos 自带的音频功能不好用，所以自行开发了一个简便的音频引擎。'),
-                    i18n.defaultFont, 40, cc.size(cc.visibleRect.width - 100, 0), cc.TEXT_ALIGNMENT_CENTER);
-                about.setPosition(winSize.width / 2, winSize.height * 0.6875);
-                //about.setContentSize(winSize.width / 2, winSize.height * 0.375);
+                    i18n.defaultFont, 60, cc.size(cc.visibleRect.width - 100, 0), cc.TEXT_ALIGNMENT_CENTER);
+                about.setPosition(v.width / 2, v.height * 0.6875);
+                //about.setContentSize(v.width / 2, v.height * 0.375);
                 about.setColor(new cc.Color(192, 192, 192, 1));
-                bg.addChild(about, 1);
+                this.fixedLayer.addChild(about, 1);
 
 
-                var MENU_FONT_SIZE = 50;
+                var MENU_FONT_SIZE = 72;
                 var MENU_COLOR = new cc.Color(0, 255, 0);
 
                 var benzLeung = new cc.LabelTTF(i18n('访问我的 Github'), i18n.defaultFont, MENU_FONT_SIZE);
@@ -55,11 +59,11 @@ define(
                 });
 
                 var menu = new cc.Menu(siteMenuItem, benzLeungMenuItem, goBackMenuItem);
-                menu.setContentSize(winSize.width / 2, winSize.height / 2);
-                menu.setPosition(winSize.width / 2, winSize.height / 4);
+                menu.setContentSize(v.width / 2, v.height / 2);
+                menu.setPosition(v.width / 2, v.height / 4);
                 menu.alignItemsVerticallyWithPadding(15);
 
-                bg.addChild(menu);
+                this.fixedLayer.addChild(menu);
             }
         });
     }

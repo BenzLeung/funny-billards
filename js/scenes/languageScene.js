@@ -23,7 +23,7 @@ define(
 
                 var winSize = cc.director.getWinSize();
 
-                var MENU_FONT_SIZE = 50;
+                var MENU_FONT_SIZE = 72;
                 var MENU_COLOR = new cc.Color(128, 128, 128);
                 var MENU_FONT = 'Helvetica Neue';
 

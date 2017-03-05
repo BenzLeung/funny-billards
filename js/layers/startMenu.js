@@ -57,7 +57,7 @@ define(
 
         return cc.Menu.extend({
             ctor : function () {
-                var MENU_FONT_SIZE = 50;
+                var MENU_FONT_SIZE = 72;
                 var MENU_COLOR = new cc.Color(0, 255, 0);
                 var MENU_DISABLED_COLOR = new cc.Color(128, 128, 128);
 
