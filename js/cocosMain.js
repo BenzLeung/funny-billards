@@ -36,7 +36,7 @@ require(['cocos', 'scenes/titleScene', 'benzAudioEngine'], function (cc, TitleSc
         if (cc.sys.isMobile) {
             cc.view.setDesignResolutionSize(1080, 1920, cc.ResolutionPolicy.NO_BORDER);
         } else {
-            cc.view.setDesignResolutionSize(1502, 877, cc.ResolutionPolicy.SHOW_ALL);
+            cc.view.setDesignResolutionSize(1920, 1080, cc.ResolutionPolicy.SHOW_ALL);
         }
         cc.view.setOrientation(cc.ORIENTATION_PORTRAIT);
         cc.view.resizeWithBrowserSize(true);
