@@ -468,6 +468,11 @@ define([
             this.setAimLine(this.ballCursor.getPosition());
         },
 
+        posInTable: function (pos) {
+            var theRect = cc.rect(BALL_RADIUS, BALL_RADIUS, TABLE_WIDTH - BALL_RADIUS * 2, TABLE_HEIGHT - BALL_RADIUS * 2);
+            return cc.rectContainsPoint(theRect, pos);
+        },
+
         showAimLine: function () {
             this.ballCursor.setVisible(true);
             this.ballLine.setVisible(true);
@@ -479,8 +484,7 @@ define([
         },
 
         setAimLine: function (pos) {
-            var theRect = cc.rect(BALL_RADIUS, BALL_RADIUS, TABLE_WIDTH - BALL_RADIUS * 2, TABLE_HEIGHT - BALL_RADIUS * 2);
-            if (cc.rectContainsPoint(theRect, pos)) {
+            if (this.posInTable(pos)) {
                 this.ballCursor.setPosition(pos);
                 this.ballLine.clear();
                 this.ballLine.drawSegment(this.masterBall.getPosition(), pos, 1, cc.color(255, 255, 255));

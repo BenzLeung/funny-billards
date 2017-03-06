@@ -29,11 +29,7 @@ define(
                 this.tableLayer.setAnchorPoint(0, 0);
                 this.addChild(this.tableLayer);
 
-                if (cc.sys.capabilities['touches']) {
-                    this.initTouch();
-                } else {
-                    this.initMouse();
-                }
+                this.initTouch();
             },
 
             initTouch: function () {

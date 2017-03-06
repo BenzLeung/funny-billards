@@ -16,6 +16,17 @@ define(['cocos'], function (cc) {
             this.setMinimumValue(10);
             this.setMaximumValue(100);
             this.setValue(100);
+            this.isAllowTouch = true;
+        },
+
+        setAllowTouch: function (a) {
+            this.isAllowTouch = a;
+        },
+
+        isTouchInside: function (touch) {
+            if (this.isAllowTouch) {
+                this._super(touch);
+            }
         }
     });
 });

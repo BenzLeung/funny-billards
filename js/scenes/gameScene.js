@@ -49,7 +49,7 @@ define(
                     this.tableLayer = new TableLayer();
                     this.tableLayer.setPosition(
                         (cc.visibleRect.width - TableLayer.TABLE_WIDTH) / 2,
-                        (cc.visibleRect.height - TableLayer.TABLE_HEIGHT) / 2);
+                        (cc.visibleRect.height - TableLayer.TABLE_HEIGHT) / 3);
                     this.fixedLayer.addChild(this.tableLayer, 1);
                     this.initMouse();
                 }
@@ -61,6 +61,8 @@ define(
 
                 this.initScoreBar();
                 this.initTableClear();
+
+                this.isPaused = false;
             },
 
             onEnter: function () {
@@ -76,23 +78,48 @@ define(
             },
 
             initMouse: function () {
+                this.initDesktopControl();
+
                 var mouseListener = cc.EventListener.create({
                     event: cc.EventListener.MOUSE,
+                    holding: false,
+                    holdingDelayIdx: 0,
+                    onMouseDown: function (event) {
+                        var target = event.getCurrentTarget();
+                        if (target.tableLayer.status !== TableLayer.STATUS_READY) return false;
+                        var pos = target.tableLayer.convertToNodeSpace(event.getLocation());
+                        if (!target.tableLayer.posInTable(pos)) return true;
+                        if (!target.isPaused && event.getButton() == cc.EventMouse.BUTTON_LEFT) {
+                            target.forceSlider.setValue(100);
+                            target.showForceCtrl();
+                            this.holding = true;
+                        }
+                    },
                     onMouseMove: function (event) {
                         var target = event.getCurrentTarget();
-                        if (target.status !== TableLayer.STATUS_READY) return false;
-                        var pos = target.convertToNodeSpace(event.getLocation());
-                        target.setAimLine(pos);
+                        if (target.tableLayer.status !== TableLayer.STATUS_READY) return false;
+                        if (this.holding) {
+                            var d = event.getDelta();
+                            target.force += d.x / 10;
+                            target.forceSlider.setValue(target.force);
+                        } else {
+                            var pos = target.tableLayer.convertToNodeSpace(event.getLocation());
+                            if (!target.isPaused) {
+                                target.tableLayer.setAimLine(pos);
+                            }
+                        }
                     },
                     onMouseUp: function (event) {
                         var target = event.getCurrentTarget();
-                        if (target.status !== TableLayer.STATUS_READY) return false;
-                        if (event.getButton() == cc.EventMouse.BUTTON_LEFT) {
-                            target.shootMasterBall();
+                        if (target.tableLayer.status !== TableLayer.STATUS_READY) return false;
+                        if (!target.isPaused && this.holding && event.getButton() == cc.EventMouse.BUTTON_LEFT) {
+                            target.hideForceCtrl();
+                            this.holding = false;
+                            target.tableLayer.shootMasterBall(target.force / 100);
                         }
                     }
                 });
-                cc.eventManager.addListener(mouseListener, this.tableLayer);
+                cc.eventManager.addListener(mouseListener, this);
 
                 // 鼠标和触屏的控制光标的方式不一样，因此显示/隐藏光标的逻辑也不一样，于是分别写
                 cc.eventManager.addCustomListener('table:status_ready', function () {
@@ -101,7 +128,7 @@ define(
             },
 
             initTouch: function () {
-                this.initControlBar();
+                this.initMobileControlBar();
 
                 this.tableLayer.setAimLine(cc.p(TableLayer.TABLE_WIDTH / 2, TableLayer.TABLE_HEIGHT / 2));
 
@@ -134,7 +161,59 @@ define(
                 }.bind(this));
             },
 
-            initControlBar: function () {
+            initDesktopControl: function () {
+                this.menuButton = new MenuButton();
+                var menuButtonSize = this.menuButton.getContentSize();
+                var v = cc.visibleRect;
+                this.menuButton.setPosition(v.width - menuButtonSize.width / 2 - 32, v.height - menuButtonSize.height / 2 - 25);
+                this.fixedLayer.addChild(this.menuButton, 3);
+
+                this.menuButton.addTargetWithActionForControlEvents(this, function () {
+                    this.showMenu();
+                }, cc.CONTROL_EVENT_TOUCH_UP_INSIDE);
+
+                this.forceSlider = new ForceSlider();
+                this.forceSlider.setAllowTouch(false);
+                var forceSliderSize = this.forceSlider.getContentSize();
+                var forceSliderBgSize = cc.size(forceSliderSize.width + 100, forceSliderSize.height + 24 + 48 + 13);
+                this.forceSlider.setPosition(
+                    forceSliderBgSize.width / 2,
+                    forceSliderSize.height / 2 + 12
+                );
+
+                this.forceLabel = new cc.LabelTTF(i18n('力度') + ' 100', i18n.defaultFont, 48);
+                this.forceLabel.setColor(cc.color(255, 255, 255));
+                this.forceLabel.setPosition(forceSliderBgSize.width / 2, forceSliderSize.height + 36);
+
+                this.forceSliderBg = new cc.LayerColor(
+                    cc.color(0, 0, 0, 128),
+                    forceSliderBgSize.width,
+                    forceSliderBgSize.height
+                );
+                this.forceSliderBg.setPosition(
+                    cc.visibleRect.width / 2,
+                    cc.visibleRect.height / 2
+                );
+                this.forceSliderBg.ignoreAnchorPointForPosition(false);
+                this.forceSliderBg.setAnchorPoint(0.5, 0.5);
+                this.forceSliderBg.setVisible(false);
+
+
+                this.forceSliderBg.addChild(this.forceSlider);
+                this.forceSliderBg.addChild(this.forceLabel);
+                this.fixedLayer.addChild(this.forceSliderBg, 2);
+
+                this.forceSlider.addTargetWithActionForControlEvents(this, function () {
+                    this.force = this.forceSlider.getValue();
+                    this.forceLabel.setString(i18n('力度') + ' ' + Math.round(this.force));
+                }.bind(this), cc.CONTROL_EVENT_VALUECHANGED);
+
+                this.force = this.tableLayer.shoot.force * 100 || 100;
+
+                this.initMenu();
+            },
+
+            initMobileControlBar: function () {
                 this.controlBarBg = new cc.LayerColor(cc.color(0, 0, 0, 128), cc.visibleRect.width, CONTROL_BAR_HEIGHT);
                 this.fixedLayer.addChild(this.controlBarBg, 2);
 
@@ -165,14 +244,23 @@ define(
                 var forceSliderSize = this.forceSlider.getContentSize();
                 this.forceSlider.setPosition(
                     cc.visibleRect.width / 2,
-                    CONTROL_BAR_HEIGHT + forceSliderSize.height / 2
+                    forceSliderSize.height / 2
                 );
-                this.forceSlider.setVisible(false);
-                this.controlBarBg.addChild(this.forceSlider, 3);
+
+                this.forceSliderBg = new cc.LayerColor(cc.color(0, 0, 0, 128), cc.visibleRect.width, forceSliderSize.height + 25);
+                this.forceSliderBg.setPosition(
+                    cc.visibleRect.width / 2,
+                    CONTROL_BAR_HEIGHT + (forceSliderSize.height + 25) / 2
+                );
+                this.forceSliderBg.ignoreAnchorPointForPosition(false);
+                this.forceSliderBg.setAnchorPoint(0.5, 0.5);
+                this.forceSliderBg.setVisible(false);
+                this.forceSliderBg.addChild(this.forceSlider);
+                this.fixedLayer.addChild(this.forceSliderBg, 2);
 
                 this.forceButton.addTargetWithActionForControlEvents(this, function () {
                     if (this.tableLayer.status !== TableLayer.STATUS_READY) return;
-                    if (this.forceSlider.isVisible()) {
+                    if (this.forceSliderBg.isVisible()) {
                         this.hideForceCtrl();
                     } else {
                         this.showForceCtrl();
@@ -217,17 +305,15 @@ define(
             },
 
             showForceCtrl: function () {
-                this.forceSlider.setVisible(true);
-                this.controlBarBg.setContentSize(cc.visibleRect.width, CONTROL_BAR_HEIGHT + 25 + this.forceSlider.getContentSize().height);
+                this.forceSliderBg.setVisible(true);
             },
 
             hideForceCtrl: function () {
-                this.forceSlider.setVisible(false);
-                this.controlBarBg.setContentSize(cc.visibleRect.width, CONTROL_BAR_HEIGHT);
+                this.forceSliderBg.setVisible(false);
             },
 
             initMenu: function () {
-                var MENU_FONT_SIZE = 72;
+                var MENU_FONT_SIZE = cc.sys.isMobile ? 72 : 50;
                 var MENU_COLOR = new cc.Color(0, 255, 0);
 
                 var resumeLabel = new cc.LabelTTF(i18n('继续'), i18n.defaultFont, MENU_FONT_SIZE);
@@ -281,19 +367,23 @@ define(
                     this.showControlTips();
                 }.bind(this), this);
 
-                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
+                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, MENU_FONT_SIZE);
                 exitLabel.setColor(new cc.Color(0, 255, 0));
-                exitLabel.enableStroke(new cc.Color(10, 10, 10), 2);
                 var exitItem = new  cc.MenuItemLabel(exitLabel, this.exitGame.bind(this), this);
 
                 this.pauseMenuLayer = new cc.LayerColor(cc.color(0, 0, 0, 128));
                 this.pauseMenuLayer.setContentSize(this.fixedLayer.getContentSize());
                 this.pauseMenuLayer.setVisible(false);
+
+                var menuList = [resumeMenuItem, restartGameMenuItem];
                 if (benzAudioEngine.support()) {
-                    this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem, toggleSfxMenuItem, toggleMusicMenuItem, controlTipsMenuItem, exitItem);
-                } else {
-                    this.pauseMenu = new cc.Menu(resumeMenuItem, restartGameMenuItem, controlTipsMenuItem, exitItem);
+                    menuList.push(toggleSfxMenuItem, toggleMusicMenuItem);
                 }
+                if (cc.sys.isMobile) {
+                    menuList.push(controlTipsMenuItem);
+                }
+                menuList.push(exitItem);
+                this.pauseMenu = new cc.Menu(menuList);
                 this.pauseMenu.setPosition(cc.visibleRect.width / 2, cc.visibleRect.height / 2);
                 this.pauseMenu.alignItemsVerticallyWithPadding(30);
                 this.pauseMenuLayer.addChild(this.pauseMenu);
@@ -319,6 +409,7 @@ define(
                 if (this.controlBarBg) {
                     this.controlBarBg.setVisible(false);
                 }
+                this.isPaused = true;
             },
 
             resumeGame: function () {
@@ -329,6 +420,7 @@ define(
                     this.zoomTableLayer.resume();
                 }
                 this.tableLayer.resume();
+                this.isPaused = false;
             },
 
             restartGame: function () {
@@ -378,7 +470,9 @@ define(
                 this.maxComboLabel.setColor(new cc.Color(255, 255, 0));
                 this.clearLayer.addChild(this.maxComboLabel, 1);
 
-                var replayLabel = new cc.LabelTTF(i18n('再来一局'), i18n.defaultFont, 72);
+                var MENU_FONT_SIZE = cc.sys.isMobile ? 72 : 50;
+
+                var replayLabel = new cc.LabelTTF(i18n('再来一局'), i18n.defaultFont, MENU_FONT_SIZE);
                 replayLabel.setColor(new cc.Color(0, 255, 0));
                 replayLabel.enableStroke(new cc.Color(10, 10, 10), 2);
                 var replayItem = new cc.MenuItemLabel(replayLabel, function () {
@@ -387,12 +481,12 @@ define(
                     this.clearLayer.setVisible(false);
                     this.playBgm();
                 }, this);
-                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, 72);
+                var exitLabel = new cc.LabelTTF(i18n('返回主菜单'), i18n.defaultFont, MENU_FONT_SIZE);
                 exitLabel.setColor(new cc.Color(0, 255, 0));
                 exitLabel.enableStroke(new cc.Color(10, 10, 10), 2);
                 var exitItem = new  cc.MenuItemLabel(exitLabel, this.exitGame.bind(this), this);
                 this.replayMenu = new cc.Menu(replayItem, exitItem);
-                this.replayMenu.setPosition(v.width / 2, v.height * 0.3);
+                this.replayMenu.setPosition(v.width / 2, v.height * 0.325);
                 this.replayMenu.alignItemsVerticallyWithPadding(30);
                 this.clearLayer.addChild(this.replayMenu, 2);
 

@@ -27,17 +27,18 @@ define(
 
                 var v = cc.visibleRect;
 
+                var ABOUT_FONT_SIZE = cc.sys.isMobile ? 60 : 40;
+                var ABOUT_WIDTH = cc.sys.isMobile ? cc.visibleRect.width - 100 : cc.visibleRect.width / 2;
                 var about = new cc.LabelTTF(
                     i18n('这是一个普通的台球游戏，我开发这个游戏的目的是学习 cocos2d-js 游戏开发，以及 chipmunk 物理引擎。' +
                         '同时实践 Web Audio API。\n\n因为我觉得 cocos 自带的音频功能不好用，所以自行开发了一个简便的音频引擎。'),
-                    i18n.defaultFont, 60, cc.size(cc.visibleRect.width - 100, 0), cc.TEXT_ALIGNMENT_CENTER);
+                    i18n.defaultFont, ABOUT_FONT_SIZE, cc.size(ABOUT_WIDTH, 0), cc.TEXT_ALIGNMENT_LEFT);
                 about.setPosition(v.width / 2, v.height * 0.6875);
-                //about.setContentSize(v.width / 2, v.height * 0.375);
                 about.setColor(new cc.Color(192, 192, 192, 1));
                 this.fixedLayer.addChild(about, 1);
 
 
-                var MENU_FONT_SIZE = 72;
+                var MENU_FONT_SIZE = cc.sys.isMobile ? 72 : 50;
                 var MENU_COLOR = new cc.Color(0, 255, 0);
 
                 var benzLeung = new cc.LabelTTF(i18n('访问我的 Github'), i18n.defaultFont, MENU_FONT_SIZE);
