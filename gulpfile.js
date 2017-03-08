@@ -43,6 +43,7 @@ gulp.task('sounds', ['clean'], function () {
 gulp.task('js', ['clean'], function () {
     gulp.src('js/requireMain.js')
         .pipe(requireJsOptimize({
+            preserveLicenseComments: false,
             mainConfigFile: 'js/requireMain.js',
             out: 'script.js'
         }))
