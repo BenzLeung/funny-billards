@@ -25,7 +25,9 @@ define(['cocos'], function (cc) {
 
         isTouchInside: function (touch) {
             if (this.isAllowTouch) {
-                this._super(touch);
+                return this._super(touch);
+            } else {
+                return false;
             }
         }
     });
