@@ -9,6 +9,7 @@
  */
 
 var gulp = require('gulp');
+var bump = require('gulp-bump');
 var clean = require('gulp-clean');
 var imageMin = require('gulp-imagemin');
 var imageMinPngCrush = require('imagemin-pngcrush');
@@ -75,4 +76,10 @@ gulp.task('html', ['clean'], function () {
         .pipe(gulp.dest('.'));
 });
 
-gulp.task('default', ['images', 'sounds', 'js', 'css', 'html']);
+gulp.task('version', function () {
+    gulp.src('package.json')
+        .pipe(bump())
+        .pipe(gulp.dest('.'));
+});
+
+gulp.task('default', ['images', 'sounds', 'js', 'css', 'html', 'version']);
