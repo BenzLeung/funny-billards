@@ -1,6 +1,6 @@
 {
   "name": "funny-billards",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "author": "Benz Leung",
   "keywords": ["cocos2d-js", "web game", "web audio api"],
   "description": "一个使用cocos2d-js编写的网页版桌球游戏",

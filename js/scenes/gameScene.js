@@ -254,6 +254,7 @@ define(
                 );
                 this.forceSliderBg.ignoreAnchorPointForPosition(false);
                 this.forceSliderBg.setAnchorPoint(0.5, 0.5);
+                this.forceSlider.setVisible(false);
                 this.forceSliderBg.setVisible(false);
                 this.forceSliderBg.addChild(this.forceSlider);
                 this.fixedLayer.addChild(this.forceSliderBg, 2);
@@ -306,9 +307,11 @@ define(
 
             showForceCtrl: function () {
                 this.forceSliderBg.setVisible(true);
+                this.forceSlider.setVisible(true);
             },
 
             hideForceCtrl: function () {
+                this.forceSlider.setVisible(false);
                 this.forceSliderBg.setVisible(false);
             },
 
